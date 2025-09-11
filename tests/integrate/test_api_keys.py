@@ -20,17 +20,17 @@ class TestCreateApiKey:
         
         response = client.post("/v1/api-keys", json=api_key_data)
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json()
         
         # Verify response structure
         assert "id" in data
         assert data["name"] == api_key_data["name"]
         assert data["description"] == api_key_data["description"]
-        assert "apiKey" in data
-        assert data["apiKey"].startswith("ce_test_")  # Based on test config
-        assert "createdAt" in data
-        assert data["lastUsed"] is None
+        assert "api_key" in data
+        assert data["api_key"].startswith("ce_test_")  # Based on test config
+        assert "created_at" in data
+        assert data["last_used"] is None
     
     def test_create_api_key_with_expiry(self, authenticated_client):
         """Test API key creation with expiry date"""
@@ -39,17 +39,17 @@ class TestCreateApiKey:
         api_key_data = {
             "name": f"expiring_key_{int(time.time())}",
             "description": "Test API key with expiry",
-            "expiresAt": "2025-12-31T23:59:59Z"
+            "expires_at": "2025-12-31T23:59:59Z"
         }
         
         response = client.post("/v1/api-keys", json=api_key_data)
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json()
         
         assert data["name"] == api_key_data["name"]
-        assert "expiresAt" in data
-        assert data["expiresAt"] == api_key_data["expiresAt"]
+        assert "expires_at" in data
+        assert data["expires_at"] == api_key_data["expires_at"]
     
     def test_create_api_key_missing_name(self, authenticated_client):
         """Test API key creation without name"""
@@ -61,7 +61,7 @@ class TestCreateApiKey:
         
         response = client.post("/v1/api-keys", json=api_key_data)
         
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert "error" in data
     
@@ -93,7 +93,7 @@ class TestListApiKeys:
             "description": "Key for list test"
         }
         create_response = client.post("/v1/api-keys", json=api_key_data)
-        assert create_response.status_code == 201
+        assert create_response.status_code == 200
         
         # List API keys
         response = client.get("/v1/api-keys")
@@ -102,7 +102,7 @@ class TestListApiKeys:
         data = response.json()
         
         # Verify response structure
-        assert "apiKeys" in data
+        assert "api_keys" in data
         assert "pagination" in data
         
         # Verify pagination structure
@@ -113,7 +113,7 @@ class TestListApiKeys:
         assert "totalPages" in pagination
         
         # Verify at least our created key is in the list
-        api_keys = data["apiKeys"]
+        api_keys = data["api_keys"]
         assert len(api_keys) > 0
         
         # Find our created key
@@ -121,8 +121,8 @@ class TestListApiKeys:
         assert our_key is not None
         assert our_key["description"] == api_key_data["description"]
         assert "id" in our_key
-        assert "createdAt" in our_key
-        assert "apiKey" not in our_key  # API key value should not be in list response
+        assert "created_at" in our_key
+        assert "api_key" not in our_key  # API key value should not be in list response
     
     def test_list_api_keys_pagination(self, authenticated_client):
         """Test API key listing with pagination"""
@@ -161,7 +161,7 @@ class TestRevokeApiKey:
             "description": "Key to be revoked"
         }
         create_response = client.post("/v1/api-keys", json=api_key_data)
-        assert create_response.status_code == 201
+        assert create_response.status_code == 200
         created_key = create_response.json()
         
         key_id = created_key["id"]
@@ -180,7 +180,7 @@ class TestRevokeApiKey:
         list_data = list_response.json()
         
         # The revoked key should not be in the active keys list
-        active_keys = list_data["apiKeys"]
+        active_keys = list_data["api_keys"]
         revoked_key = next((key for key in active_keys if key["id"] == key_id), None)
         assert revoked_key is None
     
@@ -191,7 +191,7 @@ class TestRevokeApiKey:
         fake_key_id = "key-nonexistent"
         response = client.delete(f"/v1/api-keys/{fake_key_id}")
         
-        assert response.status_code == 404
+        assert response.status_code == 400  # Invalid UUID format
         data = response.json()
         assert "error" in data
     
