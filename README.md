@@ -18,26 +18,50 @@
 
 **Deploy Containers in Seconds. Your App, Live on the Web.**
 
+*An Open-Source Alternative to Google Cloud Run - Built with Rust & Axum*
+
 ---
 
 ## Introduction
 
-**Container Engine** is a revolutionary open-source service that empowers developers to effortlessly deploy containerized applications to the internet with unprecedented simplicity and speed. By intelligently abstracting away the complexity of Kubernetes infrastructure, Container Engine creates a seamless deployment experience that lets you focus entirely on your code and business logic, not on managing infrastructure.
+**Container Engine** is an open-source alternative to Google Cloud Run, built with Rust and the Axum framework. This revolutionary service empowers developers to effortlessly deploy containerized applications to the internet with unprecedented simplicity and speed. By intelligently abstracting away the complexity of Kubernetes infrastructure, Container Engine creates a seamless deployment experience that lets you focus entirely on your code and business logic, not on managing infrastructure.
 
-With Container Engine, the journey from a Docker image to a live, production-ready URL happens with just a single API call—no YAML configurations to write, no kubectl commands to remember, and no infrastructure headaches. Whether you're a solo developer launching a side project or part of an enterprise team deploying critical services, Container Engine provides a standardized, reliable deployment pipeline that just works.
+Unlike proprietary solutions, Container Engine provides a complete **User Management System** including user registration, authentication, API key management, and deployment management - all while being fully open-source. With Container Engine, the journey from a Docker image to a live, production-ready URL happens with just a single API call—no YAML configurations to write, no kubectl commands to remember, and no infrastructure headaches.
 
 ## Key Features
 
+### User Management System
+- **User Registration & Authentication:** Complete user registration and login system with secure password management
+- **API Key Management:** Generate, manage, and revoke API keys for secure access to the platform
+- **User Dashboard:** Comprehensive user interface for managing deployments, viewing usage, and account settings
+
+### Container Deployment & Management
 - **Deploy via API:** Go from container image to live URL with a single API call, reducing deployment time from hours to seconds.
 - **Zero Kubernetes Hassle:** No need to write YAML or manage `kubectl`. Our engine translates simple REST API calls into complex Kubernetes configurations behind the scenes.
 - **Auto-generated URLs:** Every deployment gets a clean, memorable, and instantly accessible URL with automatic HTTPS certificate provisioning and management.
 - **Scalable by Design:** Built on the robust foundation of Kubernetes for reliability and scale, with built-in horizontal scaling capabilities.
+
+### Technical Features
+- **Rust + Axum Backend:** High-performance, memory-safe backend built with Rust and the modern Axum web framework
 - **Registry Agnostic:** Pull public or private images from Docker Hub, Google Container Registry, Amazon ECR, GitHub Container Registry, or any other container registry with support for authentication.
 - **Environment Variables Management:** Securely inject configuration through environment variables without rebuilding images.
 - **Deployment Monitoring:** Real-time logs and performance metrics for all your deployments in one unified dashboard.
 - **Zero Downtime Updates:** Update your applications seamlessly with rolling updates that guarantee availability.
 
-## How It Works (Architecture Overview)
+## Technology Stack
+
+**Container Engine** is built with modern, high-performance technologies:
+
+- **Backend:** Rust with Axum framework for maximum performance and memory safety
+- **Database:** PostgreSQL for reliable data persistence
+- **Container Orchestration:** Kubernetes for scalable container management
+- **Authentication:** JWT tokens with bcrypt password hashing
+- **Monitoring:** Prometheus metrics with Grafana dashboards
+- **Logging:** Structured logging with correlation IDs
+
+The Rust + Axum backend provides exceptional performance while ensuring memory safety and preventing common security vulnerabilities.
+
+## Architecture Overview
 
 Container Engine provides a sophisticated yet simple interface between developers and Kubernetes infrastructure. Users interact with the Container Engine REST API or SDK, and our service intelligently translates these high-level deployment requests into the appropriate Kubernetes objects (Deployment, Service, Ingress) on the backend cluster.
 
@@ -74,9 +98,13 @@ The architecture is designed to be cloud-agnostic, meaning Container Engine can 
 ## Getting Started
 
 ### Prerequisites
-- An account with Container Engine ([your-domain])
-- An API Key generated from your user dashboard
+- An account with Container Engine (register via API or web interface)
+- An API Key generated from your user dashboard or via the API
 - A Docker image available in a container registry
+
+## API Documentation
+
+For comprehensive API documentation including authentication, user management, and deployment endpoints, see [APIs.md](./APIs.md).
 
 ### Installation Options
 
@@ -292,17 +320,20 @@ We enthusiastically welcome contributions to the Container Engine project! Wheth
 ### Development Setup
 ```bash
 # Clone the repository
-git clone https://github.com/AI-Decenter/Open-Container-Engine.git
+git clone https://github.com/ngocbd/Open-Container-Engine.git
 
-# Install dependencies
+# Install Rust and Cargo
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Build the project
 cd Open-Container-Engine
-npm install
+cargo build
 
 # Run tests
-npm test
+cargo test
 
 # Start development server
-npm start
+cargo run
 ```
 
 ## Roadmap
@@ -331,7 +362,7 @@ of this software and associated documentation files...
 
 - **Website**: [your-domain]
 - **Documentation**: [docs.your-domain]
-- **GitHub**: [github.com/AI-Decenter/Open-Container-Engine](https://github.com/AI-Decenter/Open-Container-Engine)
+- **GitHub**: [github.com/ngocbd/Open-Container-Engine](https://github.com/ngocbd/Open-Container-Engine)
 - **Community**: [Join our Slack](https://slack.your-domain)
 - **Twitter**: [@ContainerEngine](https://twitter.com/ContainerEngine)
 
