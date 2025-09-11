@@ -300,7 +300,7 @@ def create_test_api_key(client: APIClient) -> Dict:
     }
     
     response = client.post("/v1/api-keys", json=api_key_data)
-    if response.status_code != 201:
+    if response.status_code != 200:
         raise Exception(f"Failed to create test API key: {response.text}")
     
     return response.json()
