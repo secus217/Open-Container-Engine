@@ -4,6 +4,7 @@ use axum::{
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde_json::{json, Value};
+use utoipa::path;
 use validator::Validate;
 
 use crate::{
@@ -13,6 +14,17 @@ use crate::{
     user::models::*,
 };
 
+#[utoipa::path(
+    get,
+    path = "/v1/user/profile",
+    responses(
+        (status = 200, description = "User profile retrieved successfully", body = UserProfile),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "User"
+)]
 pub async fn get_profile(
     State(state): State<AppState>,
     user: AuthUser,
@@ -53,6 +65,20 @@ pub async fn get_profile(
     }))
 }
 
+#[utoipa::path(
+    put,
+    path = "/v1/user/profile",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated successfully"),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 409, description = "Username or email already exists", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "User"
+)]
 pub async fn update_profile(
     State(state): State<AppState>,
     user: AuthUser,
@@ -119,6 +145,20 @@ pub async fn update_profile(
     })))
 }
 
+#[utoipa::path(
+    put,
+    path = "/v1/user/password",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 200, description = "Password changed successfully"),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Current password is incorrect", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "User"
+)]
 pub async fn change_password(
     State(state): State<AppState>,
     user: AuthUser,

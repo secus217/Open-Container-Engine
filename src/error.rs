@@ -3,8 +3,10 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use thiserror::Error;
+use utoipa::ToSchema;
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -49,6 +51,38 @@ pub enum AppError {
     
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+}
+
+/// Standard error response
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ErrorResponse {
+    pub error: ErrorDetails,
+}
+
+/// Error details
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ErrorDetails {
+    /// Error code
+    pub code: String,
+    /// Error message
+    pub message: String,
+}
+
+/// Validation error response
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ValidationErrorResponse {
+    pub error: ValidationErrorDetails,
+}
+
+/// Validation error details
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ValidationErrorDetails {
+    /// Error code
+    pub code: String,
+    /// Error message
+    pub message: String,
+    /// Field-specific validation errors
+    pub fields: Option<serde_json::Value>,
 }
 
 impl IntoResponse for AppError {
