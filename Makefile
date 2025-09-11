@@ -16,7 +16,10 @@ help:
 	@echo "Development:"
 	@echo "  make dev            - Start development server"
 	@echo "  make build          - Build the project"
-	@echo "  make test           - Run tests"
+	@echo "  make test           - Run Rust tests"
+	@echo "  make test-integration  - Run integration tests"
+	@echo "  make test-setup     - Setup integration test environment"
+	@echo "  make test-clean     - Clean integration test environment"
 	@echo "  make check          - Check code without building"
 	@echo "  make format         - Format code"
 	@echo "  make lint           - Run linting"
@@ -76,8 +79,34 @@ build:
 	@cargo build
 
 test:
-	@echo "Running tests..."
+	@echo "Running Rust tests..."
 	@cargo test
+
+# Integration tests
+test-setup:
+	@echo "Setting up integration test environment..."
+	@python3 -m pip install -r tests/requirements.txt
+	@echo "Integration test environment ready"
+
+test-integration: test-setup
+	@echo "Running integration tests..."
+	@./tests/run_tests.sh
+
+test-integration-verbose: test-setup
+	@echo "Running integration tests with verbose output..."
+	@./tests/run_tests.sh --verbose
+
+test-integration-specific: test-setup
+	@echo "Running specific integration test..."
+	@read -p "Enter test pattern: " pattern; \
+	./tests/run_tests.sh --test "$$pattern"
+
+test-clean:
+	@echo "Cleaning integration test environment..."
+	@./tests/run_tests.sh --cleanup-only
+
+test-all: test test-integration
+	@echo "All tests completed!"
 
 check:
 	@echo "Checking code..."

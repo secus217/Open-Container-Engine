@@ -43,10 +43,12 @@ Unlike proprietary solutions, Container Engine provides a complete **User Manage
 
 ### Technical Features
 - **Rust + Axum Backend:** High-performance, memory-safe backend built with Rust and the modern Axum web framework
+- **OpenAPI Documentation:** Complete API documentation with Swagger UI integration using utoipa
 - **Registry Agnostic:** Pull public or private images from Docker Hub, Google Container Registry, Amazon ECR, GitHub Container Registry, or any other container registry with support for authentication.
 - **Environment Variables Management:** Securely inject configuration through environment variables without rebuilding images.
 - **Deployment Monitoring:** Real-time logs and performance metrics for all your deployments in one unified dashboard.
 - **Zero Downtime Updates:** Update your applications seamlessly with rolling updates that guarantee availability.
+- **Automated Setup:** Intelligent setup script that checks and installs all required dependencies automatically.
 
 ## Technology Stack
 
@@ -318,22 +320,175 @@ We enthusiastically welcome contributions to the Container Engine project! Wheth
 5. Open a Pull Request
 
 ### Development Setup
+
+Container Engine includes an automated setup script that handles dependency installation and environment configuration:
+
 ```bash
 # Clone the repository
 git clone https://github.com/ngocbd/Open-Container-Engine.git
+cd Open-Container-Engine
 
+# Make setup script executable
+chmod +x setup.sh
+
+# Check system dependencies
+./setup.sh check
+
+# Full automated setup (installs dependencies if missing)
+./setup.sh setup
+
+# Start development server
+./setup.sh dev
+```
+
+#### Available Setup Commands
+
+```bash
+# Get help and see all available commands
+./setup.sh help
+
+# Development commands
+./setup.sh build          # Build the project
+./setup.sh test           # Run Rust tests
+./setup.sh format         # Format code
+./setup.sh lint           # Run linting
+
+# Integration testing
+make test-setup           # Setup integration test environment
+make test-integration     # Run comprehensive API integration tests
+make test-integration-verbose  # Run integration tests with verbose output
+make test-clean          # Clean integration test environment
+
+# Database management
+./setup.sh db-up          # Start database services
+./setup.sh db-down        # Stop database services
+./setup.sh db-reset       # Reset database and volumes
+./setup.sh migrate        # Run database migrations
+./setup.sh sqlx-prepare   # Prepare SQLx for offline compilation
+
+# Docker operations
+./setup.sh docker-build   # Build Docker image
+./setup.sh docker-up      # Start all services with Docker
+./setup.sh docker-down    # Stop all Docker services
+
+# Cleanup
+./setup.sh clean          # Clean build artifacts
+```
+
+#### Manual Setup (if needed)
+
+If you prefer manual setup or the automated script doesn't work for your system:
+
+```bash
 # Install Rust and Cargo
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Build the project
-cd Open-Container-Engine
-cargo build
+# Install SQLx CLI
+cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
-# Run tests
+# Start database services
+docker compose up postgres redis -d
+
+# Create environment file
+cp .env.example .env
+
+# Run migrations
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/container_engine"
+sqlx migrate run
+
+# Prepare SQLx for offline compilation
+cargo sqlx prepare
+
+# Build and run
+cargo build
+cargo run
+```
+
+#### API Documentation
+
+Once the server is running, you can access:
+
+- **Health Check**: http://localhost:3000/health
+- **OpenAPI Specification**: http://localhost:3000/api-docs/openapi.json
+- **API Endpoints**: All endpoints are documented in the OpenAPI spec
+
+#### Dependencies
+
+The setup script automatically checks for and installs:
+
+- **Rust** (latest stable version)
+- **Docker** & **Docker Compose**
+- **Git** & **curl**
+- **Python 3** (optional, for development tools)
+- **SQLx CLI** (for database migrations)
+
+## Testing
+
+Container Engine includes a comprehensive test suite to ensure API reliability and functionality.
+
+### Integration Tests
+
+We maintain a complete integration test suite using pytest that validates all API endpoints:
+
+- **93 integration tests** covering every API endpoint
+- **Automated test environment** with Docker management
+- **Authentication testing** for JWT tokens and API keys
+- **Error case validation** for proper error handling
+- **Response format verification** ensuring API consistency
+
+#### Running Integration Tests
+
+```bash
+# Setup test environment (install Python dependencies)
+make test-setup
+
+# Run all integration tests
+make test-integration
+
+# Run tests with verbose output
+make test-integration-verbose
+
+# Run specific test category
+pytest -m auth              # Authentication tests
+pytest -m deployment        # Deployment tests
+pytest -m monitoring        # Monitoring tests
+
+# Clean up test environment
+make test-clean
+```
+
+#### Test Categories
+
+- **Authentication** (13 tests): Registration, login, logout, token refresh
+- **API Keys** (12 tests): Creation, listing, revocation, authentication
+- **User Profile** (15 tests): Profile management, password changes
+- **Deployments** (23 tests): CRUD operations, scaling, lifecycle management
+- **Monitoring** (11 tests): Logs, metrics, status endpoints
+- **Domains** (12 tests): Custom domain management
+- **Health Check** (3 tests): Server health monitoring
+- **Infrastructure** (4 tests): Test framework validation
+
+#### Continuous Integration
+
+Integration tests run automatically on every commit to the main branch via GitHub Actions, ensuring:
+
+- Code quality through linting and formatting checks
+- Database compatibility with PostgreSQL
+- Redis connectivity and caching functionality
+- Complete API endpoint validation
+
+For detailed testing documentation, see [tests/README.md](tests/README.md) and [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md).
+
+### Unit Tests
+
+Rust unit tests are available for core functionality:
+
+```bash
+# Run Rust unit tests
 cargo test
 
-# Start development server
-cargo run
+# Run with verbose output
+cargo test -- --nocapture
 ```
 
 ## Roadmap

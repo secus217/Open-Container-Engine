@@ -9,6 +9,8 @@ use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod auth;
 mod config;
@@ -21,6 +23,60 @@ mod user;
 use config::Config;
 use database::Database;
 use error::AppError;
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        handlers::auth::register,
+        handlers::auth::login,
+        handlers::auth::refresh_token,
+        handlers::auth::logout,
+        handlers::auth::create_api_key,
+        handlers::auth::list_api_keys,
+        handlers::auth::revoke_api_key,
+        handlers::user::get_profile,
+        handlers::user::update_profile,
+        handlers::user::change_password,
+        health_check,
+    ),
+    components(
+        schemas(
+            auth::models::RegisterRequest,
+            auth::models::LoginRequest,
+            auth::models::AuthResponse,
+            auth::models::UserInfo,
+            auth::models::RefreshTokenRequest,
+            auth::models::RefreshTokenResponse,
+            auth::models::CreateApiKeyRequest,
+            auth::models::ApiKeyResponse,
+            auth::models::ApiKeyListItem,
+            auth::models::ApiKeyListResponse,
+            auth::models::PaginationInfo,
+            user::models::UserProfile,
+            user::models::UpdateProfileRequest,
+            user::models::ChangePasswordRequest,
+            error::ErrorResponse,
+            error::ErrorDetails,
+        )
+    ),
+    tags(
+        (name = "Authentication", description = "User authentication and authorization"),
+        (name = "API Keys", description = "API key management"),
+        (name = "User", description = "User profile management"),
+        (name = "Health", description = "Health check endpoints"),
+    ),
+    info(
+        title = "Container Engine API",
+        version = "0.1.0",
+        description = "An open-source alternative to Google Cloud Run built with Rust & Axum",
+        license(name = "MIT"),
+        contact(name = "Container Engine", url = "https://github.com/ngocbd/Open-Container-Engine")
+    ),
+    servers(
+        (url = "http://localhost:3000", description = "Local development server"),
+    )
+)]
+struct ApiDoc;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -84,6 +140,10 @@ fn create_app(state: AppState) -> Router {
         // Health check endpoint
         .route("/health", get(health_check))
         
+        // API documentation via direct routing
+        .route("/swagger-ui", get(|| async { "Swagger UI would be here" }))
+        .route("/api-docs/openapi.json", get(|| async { Json(ApiDoc::openapi()) }))
+        
         // Authentication routes
         .route("/v1/auth/register", post(handlers::auth::register))
         .route("/v1/auth/login", post(handlers::auth::login))
@@ -127,6 +187,14 @@ fn create_app(state: AppState) -> Router {
         .with_state(state)
 }
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Service health status"),
+    ),
+    tag = "Health"
+)]
 async fn health_check() -> Result<Json<Value>, AppError> {
     Ok(Json(json!({
         "status": "healthy",

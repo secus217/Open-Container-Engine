@@ -6,6 +6,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use utoipa::path;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -19,6 +20,17 @@ use crate::{
     error::AppError,
 };
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/register",
+    request_body = RegisterRequest,
+    responses(
+        (status = 200, description = "User registered successfully", body = AuthResponse),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 409, description = "User already exists", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
@@ -84,6 +96,17 @@ pub async fn register(
     })))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/login",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Login successful", body = AuthResponse),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Invalid credentials", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 pub async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
@@ -126,6 +149,16 @@ pub async fn login(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/refresh",
+    request_body = RefreshTokenRequest,
+    responses(
+        (status = 200, description = "Token refreshed successfully", body = RefreshTokenResponse),
+        (status = 401, description = "Invalid refresh token", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 pub async fn refresh_token(
     State(state): State<AppState>,
     Json(payload): Json<RefreshTokenRequest>,
@@ -144,6 +177,17 @@ pub async fn refresh_token(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/logout",
+    responses(
+        (status = 200, description = "Successfully logged out"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Authentication"
+)]
 pub async fn logout(
     _user: AuthUser,
 ) -> Result<Json<Value>, AppError> {
@@ -154,10 +198,12 @@ pub async fn logout(
     })))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema, utoipa::IntoParams)]
 pub struct PaginationQuery {
+    /// Page number (default: 1)
     #[serde(default = "default_page")]
     pub page: u32,
+    /// Items per page (default: 10, max: 100)
     #[serde(default = "default_limit")]
     pub limit: u32,
 }
@@ -165,6 +211,19 @@ pub struct PaginationQuery {
 fn default_page() -> u32 { 1 }
 fn default_limit() -> u32 { 10 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/api-keys",
+    request_body = CreateApiKeyRequest,
+    responses(
+        (status = 200, description = "API key created successfully", body = ApiKeyResponse),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "API Keys"
+)]
 pub async fn create_api_key(
     State(state): State<AppState>,
     user: AuthUser,
@@ -208,6 +267,20 @@ pub async fn create_api_key(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/v1/api-keys",
+    params(
+        PaginationQuery
+    ),
+    responses(
+        (status = 200, description = "API keys retrieved successfully", body = ApiKeyListResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "API Keys"
+)]
 pub async fn list_api_keys(
     State(state): State<AppState>,
     user: AuthUser,
@@ -254,6 +327,21 @@ pub async fn list_api_keys(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/v1/api-keys/{key_id}",
+    params(
+        ("key_id" = Uuid, Path, description = "API key ID")
+    ),
+    responses(
+        (status = 200, description = "API key revoked successfully"),
+        (status = 404, description = "API key not found", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "API Keys"
+)]
 pub async fn revoke_api_key(
     State(state): State<AppState>,
     user: AuthUser,
