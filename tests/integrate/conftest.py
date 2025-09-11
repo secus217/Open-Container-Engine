@@ -266,7 +266,7 @@ def create_test_user(client: APIClient) -> Dict:
         "username": f"testuser_{int(time.time())}",
         "email": f"test_{int(time.time())}@example.com",
         "password": "TestPassword123!",
-        "confirmPassword": "TestPassword123!"
+        "confirm_password": "TestPassword123!"
     }
     
     # Register user
@@ -283,12 +283,12 @@ def create_test_user(client: APIClient) -> Dict:
         raise Exception(f"Failed to login test user: {login_response.text}")
     
     login_data = login_response.json()
-    client.set_auth_token(login_data["accessToken"])
+    client.set_auth_token(login_data["access_token"])
     
     return {
         "user_data": user_data,
         "login_data": login_data,
-        "token": login_data["accessToken"]
+        "token": login_data["access_token"]
     }
 
 
@@ -300,7 +300,7 @@ def create_test_api_key(client: APIClient) -> Dict:
     }
     
     response = client.post("/v1/api-keys", json=api_key_data)
-    if response.status_code != 201:
+    if response.status_code != 200:
         raise Exception(f"Failed to create test API key: {response.text}")
     
     return response.json()
