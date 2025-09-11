@@ -349,9 +349,15 @@ chmod +x setup.sh
 
 # Development commands
 ./setup.sh build          # Build the project
-./setup.sh test           # Run tests
+./setup.sh test           # Run Rust tests
 ./setup.sh format         # Format code
 ./setup.sh lint           # Run linting
+
+# Integration testing
+make test-setup           # Setup integration test environment
+make test-integration     # Run comprehensive API integration tests
+make test-integration-verbose  # Run integration tests with verbose output
+make test-clean          # Clean integration test environment
 
 # Database management
 ./setup.sh db-up          # Start database services
@@ -415,6 +421,75 @@ The setup script automatically checks for and installs:
 - **Git** & **curl**
 - **Python 3** (optional, for development tools)
 - **SQLx CLI** (for database migrations)
+
+## Testing
+
+Container Engine includes a comprehensive test suite to ensure API reliability and functionality.
+
+### Integration Tests
+
+We maintain a complete integration test suite using pytest that validates all API endpoints:
+
+- **93 integration tests** covering every API endpoint
+- **Automated test environment** with Docker management
+- **Authentication testing** for JWT tokens and API keys
+- **Error case validation** for proper error handling
+- **Response format verification** ensuring API consistency
+
+#### Running Integration Tests
+
+```bash
+# Setup test environment (install Python dependencies)
+make test-setup
+
+# Run all integration tests
+make test-integration
+
+# Run tests with verbose output
+make test-integration-verbose
+
+# Run specific test category
+pytest -m auth              # Authentication tests
+pytest -m deployment        # Deployment tests
+pytest -m monitoring        # Monitoring tests
+
+# Clean up test environment
+make test-clean
+```
+
+#### Test Categories
+
+- **Authentication** (13 tests): Registration, login, logout, token refresh
+- **API Keys** (12 tests): Creation, listing, revocation, authentication
+- **User Profile** (15 tests): Profile management, password changes
+- **Deployments** (23 tests): CRUD operations, scaling, lifecycle management
+- **Monitoring** (11 tests): Logs, metrics, status endpoints
+- **Domains** (12 tests): Custom domain management
+- **Health Check** (3 tests): Server health monitoring
+- **Infrastructure** (4 tests): Test framework validation
+
+#### Continuous Integration
+
+Integration tests run automatically on every commit to the main branch via GitHub Actions, ensuring:
+
+- Code quality through linting and formatting checks
+- Database compatibility with PostgreSQL
+- Redis connectivity and caching functionality
+- Complete API endpoint validation
+
+For detailed testing documentation, see [tests/README.md](tests/README.md) and [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md).
+
+### Unit Tests
+
+Rust unit tests are available for core functionality:
+
+```bash
+# Run Rust unit tests
+cargo test
+
+# Run with verbose output
+cargo test -- --nocapture
+```
 
 ## Roadmap
 
