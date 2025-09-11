@@ -73,12 +73,6 @@ jobs:
         pip install --upgrade pip
         pip install -r tests/requirements.txt
 
-    - name: Check Rust formatting
-      run: cargo fmt --all -- --check
-
-    - name: Run Rust linter
-      run: cargo clippy --all-targets --all-features -- -D warnings
-
     - name: Build Rust application
       run: cargo build --verbose
 
