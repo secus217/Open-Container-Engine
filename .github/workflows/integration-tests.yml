@@ -74,7 +74,10 @@ jobs:
         pip install -r tests/requirements.txt
 
     - name: Build Rust application
-      run: cargo build --verbose
+      run: |
+        # Use offline mode for SQLx to avoid database dependency during compilation
+        export SQLX_OFFLINE=true
+        cargo build --verbose
 
     - name: Set up test environment
       run: |
@@ -101,6 +104,8 @@ jobs:
 
     - name: Start Container Engine server in background
       run: |
+        # Use offline mode for SQLx and start server
+        export SQLX_OFFLINE=true
         cargo run &
         echo $! > server.pid
         
