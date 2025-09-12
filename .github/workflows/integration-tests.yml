@@ -78,16 +78,22 @@ jobs:
 
     - name: Set up test environment
       run: |
-        # Set environment variables for the application
+        # Set the environment variable to use the integration test configuration
+        echo "ENVIRONMENT=integrate_test" >> $GITHUB_ENV
+        
+        # Load configuration from .env.integrate_test file
+        if [ -f .env.integrate_test ]; then
+          while IFS= read -r line; do
+            # Skip comments and empty lines
+            if [[ $line =~ ^[^#]*= ]]; then
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < .env.integrate_test
+        fi
+        
+        # Override specific variables for GitHub Actions environment
         echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/container_engine_test" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
-        echo "PORT=3000" >> $GITHUB_ENV
-        echo "JWT_SECRET=test-jwt-secret-key-for-github-actions" >> $GITHUB_ENV
-        echo "JWT_EXPIRES_IN=3600" >> $GITHUB_ENV
-        echo "API_KEY_PREFIX=ce_test_" >> $GITHUB_ENV
-        echo "KUBERNETES_NAMESPACE=test" >> $GITHUB_ENV
-        echo "DOMAIN_SUFFIX=test.local" >> $GITHUB_ENV
-        echo "RUST_LOG=container_engine=info,tower_http=info" >> $GITHUB_ENV
 
     - name: Run database migrations
       run: |
@@ -98,8 +104,8 @@ jobs:
         cargo run &
         echo $! > server.pid
         
-        # Wait for server to be ready
-        timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+        # Wait for server to be ready (using port 3001 for integration tests)
+        timeout 60 bash -c 'until curl -f http://localhost:3001/health; do sleep 2; done'
 
     - name: Run integration tests
       run: |
