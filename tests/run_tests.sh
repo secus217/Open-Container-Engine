@@ -111,9 +111,14 @@ done
 cleanup() {
     print_status "Cleaning up test environment..."
     
-    # Stop any running containers
-    docker stop test_postgres test_redis 2>/dev/null || true
-    docker rm test_postgres test_redis 2>/dev/null || true
+    # Only stop containers if not in GitHub Actions (they're managed by GitHub)
+    if [ "$GITHUB_ACTIONS" != "true" ] && [ "$CI" != "true" ]; then
+        # Stop any running containers
+        docker stop test_postgres test_redis 2>/dev/null || true
+        docker rm test_postgres test_redis 2>/dev/null || true
+    else
+        print_status "Skipping container cleanup in CI environment"
+    fi
     
     # Kill any running server processes
     pkill -f "cargo run" 2>/dev/null || true
