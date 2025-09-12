@@ -11,14 +11,23 @@ import psycopg2
 import redis
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment-specific .env file for tests
+environment = os.getenv("ENVIRONMENT", "integrate_test")
+env_file = f".env.{environment}"
+
+# Try to load environment-specific file, fallback to .env.test, then .env
+if os.path.exists(env_file):
+    load_dotenv(env_file)
+elif os.path.exists("tests/.env.test"):
+    load_dotenv("tests/.env.test")
+else:
+    load_dotenv()
 
 class TestConfig:
     """Test configuration settings"""
     
     # Server settings
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:3000")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:3001")  # Use port 3001 for tests
     HEALTH_ENDPOINT = "/health"
     
     # Database settings
@@ -50,10 +59,25 @@ class TestServerManager:
         self.docker_client = docker.from_env()
         self.server_process = None
         self.containers_started = []
+        self.is_github_actions = self._detect_github_actions()
+    
+    def _detect_github_actions(self) -> bool:
+        """Detect if running in GitHub Actions environment"""
+        return (
+            os.getenv("GITHUB_ACTIONS") == "true" or 
+            os.getenv("CI") == "true" or
+            os.getenv("RUNNER_OS") is not None
+        )
     
     def start_dependencies(self):
         """Start PostgreSQL and Redis using Docker"""
         print("Starting test dependencies...")
+        
+        # Skip Docker container creation in GitHub Actions since services are provided
+        if self.is_github_actions:
+            print("Detected GitHub Actions environment - using provided services")
+            self._wait_for_dependencies()
+            return
         
         # Start PostgreSQL
         try:
@@ -138,9 +162,10 @@ class TestServerManager:
         # Set environment variables for the server
         env = os.environ.copy()
         env.update({
+            "ENVIRONMENT": "integrate_test",  # This will load .env.integrate_test
             "DATABASE_URL": TestConfig.DATABASE_URL,
             "REDIS_URL": TestConfig.REDIS_URL,
-            "PORT": "3000",
+            "PORT": "3001",  # Use port 3001 to avoid conflicts
             "JWT_SECRET": "test-jwt-secret-key",
             "JWT_EXPIRES_IN": "3600",
             "API_KEY_PREFIX": "ce_test_",
@@ -188,12 +213,16 @@ class TestServerManager:
             self.server_process.wait()
             print("Server stopped")
         
-        for container in self.containers_started:
-            try:
-                container.stop()
-                print(f"Stopped container: {container.id[:12]}")
-            except docker.errors.NotFound:
-                pass
+        # Only stop containers if we started them (not in GitHub Actions)
+        if not self.is_github_actions:
+            for container in self.containers_started:
+                try:
+                    container.stop()
+                    print(f"Stopped container: {container.id[:12]}")
+                except docker.errors.NotFound:
+                    pass
+        else:
+            print("Skipping container cleanup in GitHub Actions environment")
     
     def is_server_running(self) -> bool:
         """Check if the server is running"""
