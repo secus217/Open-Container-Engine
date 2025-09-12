@@ -15,8 +15,19 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        // Load .env file if it exists
-        dotenv::dotenv().ok();
+        // Determine environment and load appropriate .env file
+        let environment = env::var("ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
+        
+        let env_file = match environment.as_str() {
+            "test" | "integrate_test" => ".env.integrate_test",
+            "development" | "dev" => ".env.development",
+            _ => ".env.development", // default to development
+        };
+        
+        // Try to load the environment-specific file, fall back to default .env
+        if let Err(_) = dotenv::from_filename(env_file) {
+            dotenv::dotenv().ok();
+        }
 
         let config = Config {
             database_url: env::var("DATABASE_URL")

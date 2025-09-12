@@ -11,14 +11,23 @@ import psycopg2
 import redis
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment-specific .env file for tests
+environment = os.getenv("ENVIRONMENT", "integrate_test")
+env_file = f".env.{environment}"
+
+# Try to load environment-specific file, fallback to .env.test, then .env
+if os.path.exists(env_file):
+    load_dotenv(env_file)
+elif os.path.exists("tests/.env.test"):
+    load_dotenv("tests/.env.test")
+else:
+    load_dotenv()
 
 class TestConfig:
     """Test configuration settings"""
     
     # Server settings
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:3000")
+    BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:3001")  # Use port 3001 for tests
     HEALTH_ENDPOINT = "/health"
     
     # Database settings
@@ -138,9 +147,10 @@ class TestServerManager:
         # Set environment variables for the server
         env = os.environ.copy()
         env.update({
+            "ENVIRONMENT": "integrate_test",  # This will load .env.integrate_test
             "DATABASE_URL": TestConfig.DATABASE_URL,
             "REDIS_URL": TestConfig.REDIS_URL,
-            "PORT": "3000",
+            "PORT": "3001",  # Use port 3001 to avoid conflicts
             "JWT_SECRET": "test-jwt-secret-key",
             "JWT_EXPIRES_IN": "3600",
             "API_KEY_PREFIX": "ce_test_",
