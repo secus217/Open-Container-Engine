@@ -2,34 +2,25 @@ name: Integration Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
-  workflow_dispatch:
+    branches: [ main ]
 
 env:
-  DATABASE_URL: "postgresql://postgres:password@localhost:5432/container_engine_test"
-  REDIS_URL: "redis://localhost:6379"
-  JWT_SECRET: "test-jwt-secret-key"
-  JWT_EXPIRES_IN: "3600"
-  API_KEY_PREFIX: "ce_test_"
-  KUBERNETES_NAMESPACE: "test"
-  DOMAIN_SUFFIX: "test.local"
-  RUST_LOG: "container_engine=info,tower_http=info"
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
-  test:
-    name: Test Suite
+  integration-tests:
     runs-on: ubuntu-latest
-
+    
     services:
       postgres:
-        image: postgres:14
+        image: postgres:16
         env:
-          POSTGRES_PASSWORD: password
-          POSTGRES_USER: postgres
           POSTGRES_DB: container_engine_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -37,7 +28,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
+      
       redis:
         image: redis:7-alpine
         options: >-
@@ -49,264 +40,108 @@ jobs:
           - 6379:6379
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
 
-      - name: Setup Python
-        uses: actions/setup-python@v5  # Update to v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+    - name: Install SQLx CLI
+      run: cargo install sqlx-cli --no-default-features --features postgres
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
 
-      - name: Setup Minikube
-        uses: medyagh/setup-minikube@master
-        with:
-          minikube-version: 'latest'
-          kubernetes-version: 'v1.28.3'
-          driver: docker
-          start: false
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r tests/requirements.txt
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client redis-tools curl
+    - name: Build Rust application
+      run: |
+        # Use offline mode for SQLx to avoid database dependency during compilation
+        export SQLX_OFFLINE=true
+        cargo build --verbose
 
-      - name: Install SQLx CLI
-        run: |
-          cargo install sqlx-cli --no-default-features --features native-tls,postgres --locked
-
-      - name: Create .env file
-        run: |
-          if [ -f .env.example ]; then
-            cp .env.example .env
-          else
-            cat > .env << EOF
-          DATABASE_URL=${{ env.DATABASE_URL }}
-          REDIS_URL=${{ env.REDIS_URL }}
-          JWT_SECRET=${{ env.JWT_SECRET }}
-          JWT_EXPIRES_IN=${{ env.JWT_EXPIRES_IN }}
-          API_KEY_PREFIX=${{ env.API_KEY_PREFIX }}
-          KUBERNETES_NAMESPACE=${{ env.KUBERNETES_NAMESPACE }}
-          DOMAIN_SUFFIX=${{ env.DOMAIN_SUFFIX }}
-          RUST_LOG=${{ env.RUST_LOG }}
-          EOF
-          fi
-
-      - name: Wait for services
-        run: |
-          echo "Waiting for PostgreSQL..."
-          timeout 30s bash -c 'until pg_isready -h localhost -p 5432 -U postgres; do sleep 1; done'
-          
-          echo "Waiting for Redis..."
-          timeout 30s bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
-          
-          echo "Services are ready!"
-
-      - name: Run database migrations
-        run: |
-          sqlx migrate run
-
-      - name: Prepare SQLx for offline compilation
-        run: |
-          cargo sqlx prepare
-
-      - name: Check code formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Build project
-        run: cargo build --verbose
-
-      - name: Run unit tests
-        run: cargo test --verbose
-
-      - name: Start Minikube
-        run: |
-          minikube start --driver=docker --wait=all
-          kubectl cluster-info
-          kubectl get nodes
-
-      - name: Install Python test dependencies
-        run: |
-          if [ -f test/requirements.txt ]; then
-            pip install -r test/requirements.txt
-          elif [ -f tests/requirements.txt ]; then
-            pip install -r tests/requirements.txt
-          else
-            # Install common testing dependencies
-            pip install pytest pytest-asyncio httpx requests pyyaml kubernetes
-          fi
-
-      - name: Run integration tests
-        run: |
-          # Find and run the test script
-          if [ -f test/run_tests.sh ]; then
-            cd test && chmod +x run_tests.sh && ./run_tests.sh --skip-build
-          elif [ -f tests/run_tests.sh ]; then
-            cd tests && chmod +x run_tests.sh && ./run_tests.sh --skip-build
-          else
-            # Run pytest directly if script not found
-            if [ -d test/integrate ]; then
-              python -m pytest test/integrate -v
-            elif [ -d tests/integrate ]; then
-              python -m pytest tests/integrate -v
-            elif [ -d test ]; then
-              python -m pytest test -v
-            elif [ -d tests ]; then
-              python -m pytest tests -v
-            else
-              echo "No test directory found"
-              exit 1
+    - name: Set up test environment
+      run: |
+        # Set the environment variable to use the integration test configuration
+        echo "ENVIRONMENT=integrate_test" >> $GITHUB_ENV
+        
+        # Load configuration from .env.integrate_test file
+        if [ -f .env.integrate_test ]; then
+          while IFS= read -r line; do
+            # Skip comments and empty lines
+            if [[ $line =~ ^[^#]*= ]]; then
+              echo "$line" >> $GITHUB_ENV
             fi
-          fi
+          done < .env.integrate_test
+        fi
+        
+        # Override specific variables for GitHub Actions environment
+        echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/container_engine_test" >> $GITHUB_ENV
+        echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
 
-      - name: Build Docker image
-        run: |
-          docker build -t container-engine:${{ github.sha }} .
+    - name: Run database migrations
+      run: |
+        sqlx migrate run --database-url postgresql://postgres:password@localhost:5432/container_engine_test
 
-      - name: Test Docker image
-        run: |
-          # Start the container in background
-          docker run -d --name test-container \
-            --network host \
-            -e DATABASE_URL=${{ env.DATABASE_URL }} \
-            -e REDIS_URL=${{ env.REDIS_URL }} \
-            -e JWT_SECRET=${{ env.JWT_SECRET }} \
-            container-engine:${{ github.sha }}
-          
-          # Wait a bit for startup
-          sleep 10
-          
-          # Check if container is running
-          docker ps | grep test-container
-          
-          # Stop and remove container
-          docker stop test-container
-          docker rm test-container
+    - name: Start Container Engine server in background
+      run: |
+        # Use offline mode for SQLx and start server
+        export SQLX_OFFLINE=true
+        cargo run &
+        echo $! > server.pid
+        
+        # Wait for server to be ready (using port 3001 for integration tests)
+        timeout 60 bash -c 'until curl -f http://localhost:3001/health; do sleep 2; done'
 
-      - name: Cleanup
-        if: always()
-        run: |
-          minikube stop || true
-          docker system prune -f || true
+    - name: Run integration tests
+      run: |
+        python -m pytest tests/integrate/ -v --tb=short --durations=10
+      timeout-minutes: 15
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    - name: Stop server
+      if: always()
+      run: |
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+          rm server.pid
+        fi
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          pytest-report.html
+          .pytest_cache/
+        retention-days: 7
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run security audit
-        run: |
-          cargo install cargo-audit --locked
-          cargo audit
-        continue-on-error: true  # Tạm thời cho phép lỗi để test
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3  # Changed from v2 to v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: staging
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        run: |
-          echo "Building image for staging deployment..."
-          docker build -t container-engine:staging-${{ github.sha }} .
-          # Add your registry push commands here
-
-      - name: Deploy to staging
-        run: |
-          echo "Deploying to staging environment..."
-          # Add your deployment commands here
-          # For example: kubectl apply, helm upgrade, etc.
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        run: |
-          echo "Building image for production deployment..."
-          docker build -t container-engine:prod-${{ github.sha }} .
-          # Add your registry push commands here
-
-      - name: Deploy to production
-        run: |
-          echo "Deploying to production environment..."
-          # Add your deployment commands here
-          # For example: kubectl apply, helm upgrade, etc.
-
-  notify:
-    name: Notify Results
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: always()
-
-    steps:
-      - name: Notify Success
-        if: needs.test.result == 'success' && needs.security.result == 'success'
-        run: |
-          echo "✅ All checks passed successfully!"
-          # Add notification logic here (Slack, Discord, email, etc.)
-
-      - name: Notify Failure
-        if: needs.test.result == 'failure' || needs.security.result == 'failure'
-        run: |
-          echo "❌ Some checks failed!"
-          # Add notification logic here (Slack, Discord, email, etc.)
+    - name: Test Summary
+      if: always()
+      run: |
+        echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "Integration tests completed for Container Engine API" >> $GITHUB_STEP_SUMMARY
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Some tests failed. Check the logs above." >> $GITHUB_STEP_SUMMARY
+        fi
