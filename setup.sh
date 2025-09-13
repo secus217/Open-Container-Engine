@@ -87,9 +87,80 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Check if Docker service is running
+# Check if Docker service is running and try to start it if possible
 is_docker_running() {
     docker info >/dev/null 2>&1
+}
+
+# Function to start Docker based on OS
+start_docker_service() {
+    log_info "Attempting to start Docker service..."
+    
+    case "$OSTYPE" in
+        linux-gnu*)
+            # Try systemctl first (for systemd-based systems)
+            if command_exists systemctl; then
+                sudo systemctl start docker || {
+                    log_warning "Failed to start with systemctl, trying service command..."
+                    sudo service docker start
+                }
+            # Try service command (for non-systemd systems)
+            elif command_exists service; then
+                sudo service docker start
+            else
+                log_error "Could not find systemctl or service command"
+                return 1
+            fi
+            ;;
+        darwin*)
+            # For macOS, try to start Docker.app
+            if [ -d "/Applications/Docker.app" ]; then
+                log_info "Found Docker Desktop, attempting to start it..."
+                open -a Docker
+            else
+                log_error "Docker Desktop not found in /Applications"
+                return 1
+            fi
+            ;;
+        msys*|cygwin*)
+            # For Windows Git Bash/Cygwin
+            if command_exists "/c/Program Files/Docker/Docker/Docker Desktop.exe"; then
+                log_info "Found Docker Desktop, attempting to start it..."
+                "/c/Program Files/Docker/Docker/Docker Desktop.exe"
+            else
+                log_error "Docker Desktop not found in standard Windows location"
+                return 1
+            fi
+            ;;
+        *)
+            log_error "Unsupported operating system: $OSTYPE"
+            return 1
+            ;;
+    esac
+
+    # Wait for Docker to start
+    local max_retries=12  # 60 seconds total
+    local retry_count=0
+    local started=false
+
+    log_info "Waiting for Docker to become available..."
+    while [ $retry_count -lt $max_retries ]; do
+        if is_docker_running; then
+            started=true
+            break
+        fi
+        log_info "Waiting for Docker to start... ($((retry_count + 1))/$max_retries)"
+        sleep 5
+        retry_count=$((retry_count + 1))
+    done
+
+    if [ "$started" = true ]; then
+        log_success "Docker is now running!"
+        return 0
+    else
+        log_error "Docker failed to start after 60 seconds"
+        return 1
+    fi
 }
 
 # Function to detect OS
@@ -568,12 +639,25 @@ setup_env() {
 install_rust_deps() {
     log_info "Installing Rust dependencies..."
 
+    # Source cargo environment
+    if [ -f "$HOME/.cargo/env" ]; then
+        . "$HOME/.cargo/env"
+    fi
+
     # Install SQLx CLI if not present
     if ! command_exists sqlx; then
         log_info "Installing SQLx CLI..."
         cargo install sqlx-cli --no-default-features --features native-tls,postgres
+        # Re-source cargo environment to get new binaries
+        . "$HOME/.cargo/env"
     else
         log_info "SQLx CLI already installed"
+    fi
+
+    # Verify SQLx installation
+    if ! command_exists sqlx; then
+        log_error "SQLx installation failed. Try running manually: cargo install sqlx-cli"
+        return 1
     fi
 
     log_success "Rust dependencies installed"
@@ -584,8 +668,31 @@ start_database() {
     log_info "Starting database services..."
 
     if ! is_docker_running; then
-        log_error "Docker is not running. Please start Docker first."
-        return 1
+        log_info "Docker is not running. Attempting to start Docker service..."
+        if [ "$OSTYPE" == "linux-gnu"* ]; then
+            # Try to start Docker service on Linux
+            sudo systemctl start docker || {
+                log_error "Failed to start Docker service. Please check Docker installation."
+                return 1
+            }
+            # Wait for Docker to fully initialize
+            local max_retries=6
+            local retry_count=0
+            while [ $retry_count -lt $max_retries ] && ! is_docker_running; do
+                log_info "Waiting for Docker to start... ($((retry_count + 1))/$max_retries)"
+                sleep 5
+                retry_count=$((retry_count + 1))
+            done
+            
+            if ! is_docker_running; then
+                log_error "Docker service failed to start after 30 seconds. Please check Docker status."
+                return 1
+            fi
+            log_success "Docker service started successfully!"
+        else
+            log_error "Docker is not running. On this OS, please start Docker Desktop manually."
+            return 1
+        fi
     fi
 
     if command_exists docker && docker compose version >/dev/null 2>&1; then
@@ -657,8 +764,21 @@ reset_database() {
 run_migrations() {
     log_info "Running database migrations..."
 
+    # Source cargo environment
+    if [ -f "$HOME/.cargo/env" ]; then
+        . "$HOME/.cargo/env"
+    fi
+
+    # Check if sqlx is in PATH
+    if ! command_exists sqlx; then
+        log_warning "SQLx CLI not found in PATH, attempting to install..."
+        cargo install sqlx-cli --no-default-features --features native-tls,postgres
+        . "$HOME/.cargo/env"
+    fi
+
     export DATABASE_URL="$DATABASE_URL"
-    sqlx migrate run
+    # Try to run with full path if direct command fails
+    sqlx migrate run || "$HOME/.cargo/bin/sqlx" migrate run
 
     log_success "Database migrations completed"
 }

@@ -51,7 +51,9 @@ if ! command -v cargo &> /dev/null; then
 fi
 
 print_status "Installing Python test dependencies..."
-pip3 install -r tests/requirements.txt
+# Get the directory containing the script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+pip3 install -r "${SCRIPT_DIR}/requirements.txt"
 
 # Set test environment
 export DATABASE_URL="postgresql://postgres:password@localhost:5432/container_engine_test"
@@ -145,12 +147,30 @@ fi
 # Run pytest
 print_status "Starting integration tests..."
 
+# Install pytest-forked if not installed
+if ! python3 -c "import pytest_forked" 2>/dev/null; then
+    print_status "Installing pytest-forked..."
+    pip3 install pytest-forked
+fi
+
+# Run pytest with forked mode for better isolation
+print_status "Starting integration tests (forked mode)..."
+
+# Base arguments with forked mode
+FORKED_ARGS="--forked -v --tb=short"
+
 if [ -n "$RUN_SPECIFIC_TEST" ]; then
     print_status "Running specific test: $RUN_SPECIFIC_TEST"
-    python3 -m pytest tests/integrate/ -k "$RUN_SPECIFIC_TEST" $PYTEST_ARGS
+    python3 -m pytest "${SCRIPT_DIR}/integrate" \
+        -k "$RUN_SPECIFIC_TEST" \
+        $FORKED_ARGS \
+        $PYTEST_ARGS
 else
     print_status "Running all integration tests..."
-    python3 -m pytest tests/integrate/ $PYTEST_ARGS
+    python3 -m pytest "${SCRIPT_DIR}/integrate" \
+        $FORKED_ARGS \
+        $PYTEST_ARGS
 fi
+
 
 print_status "Integration tests completed"
