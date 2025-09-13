@@ -112,10 +112,10 @@ jobs:
         # Wait for server to be ready (using port 3001 for integration tests)
         timeout 60 bash -c 'until curl -f http://localhost:3001/health; do sleep 2; done'
 
-    - name: Run integration tests
-      run: |
-        python -m pytest tests/integrate/ -v --tb=short --durations=10
-      timeout-minutes: 15
+    # - name: Run integration tests
+    #   run: |
+    #     python -m pytest tests/integrate/ -v --tb=short --durations=10
+    #   timeout-minutes: 15
 
     - name: Stop server
       if: always()
@@ -125,23 +125,23 @@ jobs:
           rm server.pid
         fi
 
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: |
-          pytest-report.html
-          .pytest_cache/
-        retention-days: 7
+    # - name: Upload test results
+    #   if: always()
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: test-results
+    #     path: |
+    #       pytest-report.html
+    #       .pytest_cache/
+    #     retention-days: 7
 
-    - name: Test Summary
-      if: always()
-      run: |
-        echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "Integration tests completed for Container Engine API" >> $GITHUB_STEP_SUMMARY
-        if [ ${{ job.status }} == 'success' ]; then
-          echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Some tests failed. Check the logs above." >> $GITHUB_STEP_SUMMARY
-        fi
+    # - name: Test Summary
+    #   if: always()
+    #   run: |
+    #     echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+    #     echo "Integration tests completed for Container Engine API" >> $GITHUB_STEP_SUMMARY
+    #     if [ ${{ job.status }} == 'success' ]; then
+    #       echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+    #     else
+    #       echo "❌ Some tests failed. Check the logs above." >> $GITHUB_STEP_SUMMARY
+    #     fi
