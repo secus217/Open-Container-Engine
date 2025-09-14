@@ -1,6 +1,4 @@
-Here's the updated workflow with English comments only:
 
-```yaml
 name: Integration Tests
 
 on:
