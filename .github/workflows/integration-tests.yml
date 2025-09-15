@@ -138,7 +138,7 @@ jobs:
     - name: Build Rust application
       run: |
         # Use offline mode for SQLx to avoid database dependency during compilation
-        export SQLX_OFFLINE=false
+        export SQLX_OFFLINE=true
         cargo build --verbose
 
     - name: Set up test environment
