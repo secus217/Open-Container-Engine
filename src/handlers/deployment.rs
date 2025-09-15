@@ -51,30 +51,33 @@ pub async fn create_deployment(
         .transpose()?;
 
     sqlx::query!(
-        r#"
-        INSERT INTO deployments (
-            id, user_id, app_name, image, port, env_vars, replicas, 
-            resources, health_check, status, url, created_at, updated_at,error_message
+            r#"
+            INSERT INTO deployments (
+                id, user_id, app_name, image, port, env_vars, replicas,
+                resources, health_check, status, url, created_at, updated_at,
+                deployed_at, error_message
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            "#,
+            deployment_id,
+            user.user_id,
+            payload.app_name,
+            payload.image,
+            payload.port,
+            env_vars_json,
+            payload.replicas.unwrap_or(1),
+            resources,
+            health_check,
+            "pending",
+            url,
+            now,
+            now,
+            None::<DateTime<Utc>>, // deployed_at - null initially
+            None::<String>         // error_message
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,$14)
-        "#,
-        deployment_id,
-        user.user_id,
-        payload.app_name,
-        payload.image,
-        payload.port,
-        env_vars_json,
-        payload.replicas.unwrap_or(1),
-        resources,
-        health_check,
-        "pending",
-        url,
-        now,
-        now,
-        None::<String>
-    )
-    .execute(&state.db.pool)
-    .await?;
+        .execute(&state.db.pool)
+        .await?;
+
     println!("Inserted deployment record into database");
 
     // TODO: Implement Kubernetes deployment logic here
