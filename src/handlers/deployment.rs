@@ -72,7 +72,7 @@ pub async fn create_deployment(
             url,
             now,
             now,
-            None::<DateTime<Utc>>, // deployed_at - null initially
+            Option::<chrono::DateTime<chrono::Utc>>::None, // deployed_at - null initially
             None::<String>         // error_message
         )
         .execute(&state.db.pool)
