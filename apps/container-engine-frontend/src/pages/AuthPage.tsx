@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
 const AuthPage: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');

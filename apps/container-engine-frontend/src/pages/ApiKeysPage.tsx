@@ -11,8 +11,10 @@ import {
   CalendarIcon,
   ClockIcon,
   ShieldCheckIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ClipboardIcon
 } from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
 
 // --- TypeScript Interfaces ---
 interface ApiKey {
@@ -42,7 +44,7 @@ const CreateKeyModal: React.FC<CreateKeyModalProps> = ({ isOpen, onClose, onSucc
     setError(null);
     try {
       const response = await api.post('/v1/api-keys', { name, description });
-      onSuccess(response.data.apiKey);
+      onSuccess(response?.data?.api_key);
       setName('');
       setDescription('');
     } catch (err: any) {
@@ -225,11 +227,24 @@ const ApiKeysPage: React.FC = () => {
   const [modalState, setModalState] = useState<'closed' | 'creating' | 'showingKey'>('closed');
   const [generatedKey, setGeneratedKey] = useState<string>('');
 
-  const fetchApiKeys = useCallback(async () => {
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchApiKeys = useCallback(async (page: number = 1, pageLimit: number = 10) => {
     try {
       setLoading(true);
-      const response = await api.get('/v1/api-keys');
-      setApiKeys(response.data.apiKeys);
+      const response = await api.get(`/v1/api-keys?page=${page}&limit=${pageLimit}`);
+      
+
+      // Update data based on your API response structure
+      setApiKeys(response.data.api_keys);
+      setCurrentPage(response.data?.pagination.page);
+      setLimit(response.data?.pagination.limit);
+      setTotal(response.data?.pagination.total);
+      setTotalPages(response.data?.pagination.total_pages);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to fetch API keys.');
@@ -239,13 +254,13 @@ const ApiKeysPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchApiKeys();
-  }, [fetchApiKeys]);
+    fetchApiKeys(currentPage, limit);
+  }, [fetchApiKeys, currentPage, limit]);
 
   const handleKeyCreated = (newKey: string) => {
     setGeneratedKey(newKey);
     setModalState('showingKey');
-    fetchApiKeys();
+    fetchApiKeys(currentPage, limit);
   };
 
   const handleCloseModals = () => {
@@ -260,10 +275,22 @@ const ApiKeysPage: React.FC = () => {
     try {
       setApiKeys(prevKeys => prevKeys.filter(key => key.id !== keyId));
       await api.delete(`/v1/api-keys/${keyId}`);
+
+      // Refresh data after deletion
+      fetchApiKeys(currentPage, limit);
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Failed to revoke API key.');
-      fetchApiKeys();
+      fetchApiKeys(currentPage, limit);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   const formatDate = (dateString: string) => {
@@ -272,6 +299,80 @@ const ApiKeysPage: React.FC = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Function to mask API key ID for secure display
+  const maskKeyId = (keyId: string) => {
+    if (!keyId || keyId.length < 8) return keyId;
+    
+    // Show first 4 and last 4 characters, mask the middle part
+    const firstPart = keyId.substring(0, 4);
+    const lastPart = keyId.substring(keyId.length - 4);
+    const maskLength = Math.min(keyId.length - 8, 12); // Limit mask to reasonable length
+    const mask = '•'.repeat(maskLength);
+    
+    return `${firstPart}${mask}${lastPart}`;
+  };
+
+  // Generate pagination buttons
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxVisiblePages = 5;
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className={`px-3 py-2 mx-1 rounded-lg text-sm font-medium transition-all ${currentPage === 1
+            ? 'text-gray-400 cursor-not-allowed'
+            : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+          }`}
+      >
+        Previous
+      </button>
+    );
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-2 mx-1 rounded-lg text-sm font-medium transition-all ${currentPage === i
+              ? 'bg-blue-600 text-white shadow-lg'
+              : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+            }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Next button
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className={`px-3 py-2 mx-1 rounded-lg text-sm font-medium transition-all ${currentPage === totalPages
+            ? 'text-gray-400 cursor-not-allowed'
+            : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+          }`}
+      >
+        Next
+      </button>
+    );
+
+    return buttons;
   };
 
   return (
@@ -329,7 +430,7 @@ const ApiKeysPage: React.FC = () => {
                       <KeyIcon className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900">{apiKeys?.length || 0}</h3>
+                      <h3 className="text-2xl font-bold text-gray-900">{total}</h3>
                       <p className="text-gray-600">Total Keys</p>
                     </div>
                   </div>
@@ -341,7 +442,7 @@ const ApiKeysPage: React.FC = () => {
                       <ShieldCheckIcon className="h-6 w-6 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900">{apiKeys?.filter(key => key.lastUsed).length || 0}</h3>
+                      <h3 className="text-2xl font-bold text-gray-900">{apiKeys?.filter((key:any) => key?.last_used).length || 0}</h3>
                       <p className="text-gray-600">Active Keys</p>
                     </div>
                   </div>
@@ -353,16 +454,44 @@ const ApiKeysPage: React.FC = () => {
                       <ClockIcon className="h-6 w-6 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900">{apiKeys?.filter(key => !key.lastUsed).length || 0}</h3>
+                      <h3 className="text-2xl font-bold text-gray-900">{apiKeys?.filter((key:any) => !key?.last_used).length || 0}</h3>
                       <p className="text-gray-600">Unused Keys</p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Controls */}
+              {
+                apiKeys && apiKeys.length > 0 && (
+                  <div className="mb-6 flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm text-gray-600">
+                        Showing {apiKeys.length > 0 ? ((currentPage - 1) * limit + 1) : 0} to {Math.min(currentPage * limit, total)} of {total} entries
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="limit" className="text-sm text-gray-600">Show:</label>
+                      <select
+                        id="limit"
+                        value={limit}
+                        onChange={(e) => handleLimitChange(Number(e.target.value))}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                      </select>
+                      <span className="text-sm text-gray-600">entries</span>
+                    </div>
+                  </div>
+                )
+              }
+
               {/* API Keys Table */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                {apiKeys?.length === 0 ? (
+                {total === 0 ? (
                   <div className="text-center py-20">
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <KeyIcon className="h-10 w-10 text-gray-400" />
@@ -387,14 +516,16 @@ const ApiKeysPage: React.FC = () => {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Key ID</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Used</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Expires</th>
                             <th className="relative px-6 py-4"><span className="sr-only">Actions</span></th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {apiKeys && apiKeys?.length>0 && apiKeys.map((key) => (
+                          {apiKeys && apiKeys.length > 0 && apiKeys.map((key:any) => (
                             <tr key={key.id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
@@ -402,6 +533,24 @@ const ApiKeysPage: React.FC = () => {
                                     <KeyIcon className="h-4 w-4 text-white" />
                                   </div>
                                   <span className="text-sm font-semibold text-gray-900">{key.name}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center group">
+                                  <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-700 border">
+                                    {maskKeyId(key.id)}
+                                  </code>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(key.id);
+                                      toast.success('Key ID copied to clipboard!');
+                                      // Optional: Add toast notification here
+                                    }}
+                                    className="ml-2 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all opacity-0 group-hover:opacity-100"
+                                    title="Copy full Key ID"
+                                  >
+                                    <ClipboardIcon className="h-4 w-4" />
+                                  </button>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
@@ -412,20 +561,27 @@ const ApiKeysPage: React.FC = () => {
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center text-sm text-gray-600">
                                   <CalendarIcon className="h-4 w-4 mr-1" />
-                                  {formatDate(key.createdAt)}
+                                  {formatDate(key.created_at)}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {key.lastUsed ? (
+                                {key.last_used ? (
                                   <div className="flex items-center">
                                     <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                                    <span className="text-sm text-gray-600">{formatDate(key.lastUsed)}</span>
+                                    <span className="text-sm text-gray-600">{formatDate(key.last_used)}</span>
                                   </div>
                                 ) : (
                                   <div className="flex items-center">
                                     <div className="w-2 h-2 bg-gray-300 rounded-full mr-2"></div>
                                     <span className="text-sm text-gray-500">Never used</span>
                                   </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {key.expires_at ? (
+                                  <span className="text-sm text-gray-600">{formatDate(key.expires_at)}</span>
+                                ) : (
+                                  <span className="text-sm text-gray-500">Never expires</span>
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -442,6 +598,17 @@ const ApiKeysPage: React.FC = () => {
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                        <div className="flex items-center justify-center">
+                          <div className="flex items-center">
+                            {renderPaginationButtons()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

@@ -87,7 +87,7 @@ const AccountSettingsPage: React.FC = () => {
                 <input type="password" id="confirmNewPassword" value={password.confirmNewPassword} onChange={e => setPassword({ ...password, confirmNewPassword: e.target.value })} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" />
               </div>
               <div className="flex justify-end pt-2">
-                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md">Change Password</button>
+                <button type="submit" className="px-4 py-2 bg-primary text-black rounded-md hover:text-blue-700">Change Password</button>
               </div>
               {passwordMessage.text && <p className={`text-sm mt-2 ${passwordMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{passwordMessage.text}</p>}
             </form>
