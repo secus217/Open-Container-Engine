@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
+import LogsPage from '../components/DeploymentDetail/LogsPage';
 import {
   RocketLaunchIcon,
   CubeIcon,
@@ -530,43 +531,7 @@ const DeploymentDetailPage: React.FC = () => {
             )}
 
             {activeTab === 'logs' && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="px-8 py-6 bg-gray-50 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mr-4">
-                        <ClipboardDocumentListIcon className="h-6 w-6 text-gray-600" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900">Application Logs</h2>
-                        <p className="text-gray-600">Real-time logs from your deployment</p>
-                      </div>
-                    </div>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all">
-                      Refresh
-                    </button>
-                  </div>
-                </div>
-                <div className="bg-gray-900 text-white font-mono text-sm p-6 h-96 overflow-y-auto">
-                  {logs.length > 0 ? (
-                    logs.map((log, index) => (
-                      <div key={index} className="flex space-x-4 py-1 hover:bg-gray-800 px-2 rounded">
-                        <span className="text-gray-500 flex-shrink-0">
-                          {new Date(log.timestamp).toLocaleTimeString()}
-                        </span>
-                        <span className="text-green-400">│</span>
-                        <span className="flex-1">{log.message}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <ClipboardDocumentListIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-500">No logs available at the moment.</p>
-                      <p className="text-gray-600 text-sm mt-2">Logs will appear here once your application starts generating them.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <LogsPage />
             )}
 
             {activeTab === 'domains' && (

@@ -10,12 +10,15 @@ use k8s_openapi::api::networking::v1::{
 use kube::{api::PostParams, Api, Client};
 use serde_json::Value;
 use std::collections::BTreeMap;
+use tokio::process::Command;
 use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::jobs::deployment_job::DeploymentJob;
 use crate::AppError;
-
+use bytes::Bytes;
+use futures_util::{AsyncBufReadExt, Stream};
+use std::pin::Pin;
 #[derive(Clone)]
 pub struct KubernetesService {
     client: Client,
@@ -36,16 +39,71 @@ impl KubernetesService {
         );
         Ok(Self { client, namespace })
     }
+    async fn get_pod_name(&self, deployment_id: &Uuid) -> Result<String, AppError> {
+        use k8s_openapi::api::core::v1::Pod;
+        use kube::api::{Api, ListParams};
+
+        let pods: Api<Pod> = Api::namespaced(self.client.clone(), &self.namespace);
+        let lp = ListParams::default().labels(&format!("deployment-id={}", deployment_id));
+
+        let pod_list = pods
+            .list(&lp)
+            .await
+            .map_err(|e| AppError::internal(&format!("Failed to list pods: {}", e)))?;
+
+        if let Some(pod) = pod_list.items.first() {
+            if let Some(pod_name) = &pod.metadata.name {
+                return Ok(pod_name.clone());
+            }
+        }
+
+        Err(AppError::not_found("No pods found for deployment"))
+    }
+    pub async fn stream_logs(
+        &self,
+        deployment_id: &Uuid,
+        tail_lines: Option<i64>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<Bytes, std::io::Error>> + Send>>, AppError> {
+        use k8s_openapi::api::core::v1::Pod;
+        use kube::api::{Api, LogParams};
+
+        let pod_name = self.get_pod_name(deployment_id).await?;
+        tracing::info!("Streaming logs from pod: {}", pod_name);
+        let pods: Api<Pod> = Api::namespaced(self.client.clone(), &self.namespace);
+
+        let mut log_params = LogParams {
+            follow: true,
+            ..Default::default()
+        };
+
+        // Get AsyncBufRead stream
+        let async_buf_read = pods
+            .log_stream(&pod_name, &log_params)
+            .await
+            .map_err(|e| AppError::internal(&format!("Failed to create log stream: {}", e)))?;
+
+        // Convert AsyncBufRead to Stream of Bytes
+        let stream = futures_util::stream::unfold(async_buf_read, |mut reader| async move {
+            let mut line = String::new();
+            match reader.read_line(&mut line).await {
+                Ok(0) => None, // EOF
+                Ok(_) => Some((Ok(Bytes::from(line)), reader)),
+                Err(e) => Some((Err(e), reader)),
+            }
+        });
+
+        Ok(Box::pin(stream))
+    }
     fn sanitize_app_name(&self, app_name: &str) -> String {
         app_name
-            .replace(' ', "-") 
+            .replace(' ', "-")
             .to_lowercase()
             .chars()
             .map(|c| {
-                if c.is_alphanumeric() || c == '-'|| c == '.' {
+                if c.is_alphanumeric() || c == '-' || c == '.' {
                     c
                 } else {
-                    '-' 
+                    '-'
                 }
             })
             .collect::<String>()
@@ -54,8 +112,12 @@ impl KubernetesService {
     async fn create_ingress(&self, job: &DeploymentJob) -> Result<Ingress, AppError> {
         let ingress_name = self.generate_ingress_name(&job.deployment_id);
         let service_name = self.generate_service_name(&job.deployment_id);
-        let host = format!("{}.local", self.sanitize_app_name(&job.app_name));
-
+        let minikube_ip = self.get_minikube_ip().await?;
+        let host = format!(
+            "{}.{}.nip.io",
+            self.sanitize_app_name(&job.app_name),
+            minikube_ip.replace(".", "-")
+        );
         let ingress = Ingress {
             metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
                 name: Some(ingress_name.clone()),
@@ -143,9 +205,35 @@ impl KubernetesService {
         }
     }
     async fn get_minikube_ip(&self) -> Result<String, AppError> {
-        // Implementation: call "minikube ip" command
-        // For now, return default
-        Ok("192.168.49.2".to_string())
+        info!("Getting Minikube IP address...");
+
+        let output = Command::new("minikube")
+            .arg("ip")
+            .output()
+            .await
+            .map_err(|e| {
+                AppError::internal(&format!("Failed to execute 'minikube ip' command: {}", e))
+            })?;
+
+        if !output.status.success() {
+            let error_msg = String::from_utf8_lossy(&output.stderr);
+            return Err(AppError::internal(&format!(
+                "Minikube command failed: {}",
+                error_msg
+            )));
+        }
+
+        let ip = String::from_utf8(output.stdout)
+            .map_err(|e| AppError::internal(&format!("Failed to parse minikube output: {}", e)))?
+            .trim()
+            .to_string();
+
+        if ip.is_empty() {
+            return Err(AppError::internal("Minikube returned empty IP address"));
+        }
+
+        info!("Minikube IP: {}", ip);
+        Ok(ip)
     }
     pub async fn deploy_application(&self, job: &DeploymentJob) -> Result<(), AppError> {
         info!("Deploying application: {} to Kubernetes", job.app_name);

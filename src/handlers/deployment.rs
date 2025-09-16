@@ -122,6 +122,7 @@ pub async fn list_deployments(
     Query(pagination): Query<PaginationQuery>,
 ) -> Result<Json<DeploymentListResponse>, AppError> {
     let limit = pagination.limit.min(100) as i64;
+
     let offset = ((pagination.page - 1) * pagination.limit) as i64;
 
     let deployments = sqlx::query_as!(

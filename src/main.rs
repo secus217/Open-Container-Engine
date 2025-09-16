@@ -1,3 +1,4 @@
+use crate::handlers::logs as logs_handler;
 use axum::{
     http::StatusCode,
     response::Json,
@@ -15,7 +16,6 @@ use tower_http::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-
 mod auth;
 mod config;
 mod database;
@@ -32,7 +32,6 @@ use config::Config;
 use database::Database;
 use error::AppError;
 use tokio::sync::mpsc;
-
 #[derive(OpenApi)]
 #[openapi(
     paths(
@@ -93,8 +92,9 @@ pub struct AppState {
     pub redis: redis::Client,
     pub config: Config,
     pub deployment_sender: mpsc::Sender<DeploymentJob>,
+    pub k8s_service: KubernetesService,
 }
-// Setup function trong main.rs
+// Setup function in main.rs
 pub async fn setup_deployment_system(
     db_pool: sqlx::PgPool,
     k8s_namespace: Option<String>,
@@ -118,7 +118,7 @@ pub async fn setup_deployment_system(
 }
 async fn open_browser_on_startup(port: u16) {
     tokio::spawn(async move {
-        // Đợi server khởi động
+        // Waiting server started
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
         let url = format!("http://localhost:{}", port);
@@ -179,6 +179,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         redis: redis_client,
         config: config.clone(),
         deployment_sender,
+        k8s_service: _k8s_service,
     };
 
     // Build our application with routes
@@ -189,9 +190,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Server listening on {}", addr);
     // Automatically open browser in development mode
     let is_dev = std::env::var("ENVIRONMENT").unwrap_or_default() != "production";
-    let auto_open = std::env::var("AUTO_OPEN_BROWSER")
-        .unwrap_or_else(|_| "true".to_string()) == "true";
-    
+    let auto_open =
+        std::env::var("AUTO_OPEN_BROWSER").unwrap_or_else(|_| "true".to_string()) == "true";
+
     if is_dev && auto_open {
         open_browser_on_startup(config.port).await;
     }
@@ -215,14 +216,14 @@ fn create_app(state: AppState) -> Router {
         println!("   npm install && npm run build\n");
     } else {
         tracing::info!("Serving frontend from: {}", frontend_path);
-        
+
         // Kiểm tra file index.html
         let index_exists = std::path::Path::new(&format!("{}/index.html", frontend_path)).exists();
         if !index_exists {
             tracing::warn!("index.html not found in frontend directory");
         }
     }
-    
+
     let index_path = format!("{}/index.html", frontend_path);
     let serve_dir = ServeDir::new(&frontend_path).not_found_service(ServeFile::new(&index_path));
     Router::new()
@@ -313,6 +314,10 @@ fn create_app(state: AppState) -> Router {
         .route(
             "/v1/deployments/:deployment_id/domains/:domain_id",
             axum::routing::delete(handlers::deployment::remove_domain),
+        )
+        .route(
+            "/v1/deployments/:deployment_id/logs/stream",
+            get(handlers::logs::ws_logs_handler)
         )
         // Serve static files
         .fallback_service(serve_dir)
