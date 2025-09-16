@@ -64,16 +64,34 @@ const NewDeploymentPage: React.FC = () => {
         envVars: formattedEnvVars,
         replicas,
       });
+
+      // Only navigate if deployment was successful
       setSuccess(`Deployment '${response.data.app_name}' created! URL: ${response.data.url}`);
-      if (response.data.id) {
+
+      // Add a small delay to show success message before navigating
+      setTimeout(() => {
         navigate(`/deployments/${response.data.id}`);
-      } else return;
+      }, 1500);
+
     } catch (err: any) {
-      setError(err.response?.data || 'An unexpected error occurred.');
+      // Handle error response
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.code === 'CONFLICT') {
+        setError('An application with this name already exists. Please choose a different name.');
+      } else if (typeof err.response?.data === 'string') {
+        setError(err.response.data);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+
+      // Scroll to top to show error message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <DashboardLayout>

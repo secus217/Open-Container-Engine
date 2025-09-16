@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
 const AuthPage: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
@@ -73,6 +74,22 @@ const AuthPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Back to Home Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-8 left-8 flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all duration-300 group"
+      >
+        <svg 
+          className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform duration-200" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="font-medium">Back to Home</span>
+      </button>
+
       <div className="max-w-md w-full space-y-8">
         <div className="bg-white backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-gray-100 relative overflow-hidden">
           
