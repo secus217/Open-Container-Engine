@@ -143,7 +143,7 @@ const LandingPage: React.FC = () => {
                     </div>
                     
                     <div className="grid md:grid-cols-3 gap-8 mb-16">
-                        {features.map((feature, index) => (
+                        {features.map((feature) => (
                             <div key={feature.name} 
                                  className="group relative p-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
                                 <div className="absolute -top-4 left-8">
