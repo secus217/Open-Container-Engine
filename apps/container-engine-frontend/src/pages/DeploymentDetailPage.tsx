@@ -60,6 +60,8 @@ const DeploymentDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [deployment, setDeployment] = useState<DeploymentDetails | null>(null);
   const [logs, setLogs] = useState<DeploymentLogs[]>([]);
+  console.log(logs);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'domains' | 'settings'>('overview');
