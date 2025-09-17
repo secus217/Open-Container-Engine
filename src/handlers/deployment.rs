@@ -512,15 +512,7 @@ pub async fn delete_deployment(
     })))
 }
 
-pub async fn get_logs(
-    _state: State<AppState>,
-    _user: AuthUser,
-    _deployment_id: Path<Uuid>,
-    _query: Query<LogsQuery>,
-) -> Result<Json<LogsResponse>, AppError> {
-    // TODO: Implement Kubernetes logs retrieval
-    Ok(Json(LogsResponse { logs: vec![] }))
-}
+
 
 pub async fn get_metrics(
     _state: State<AppState>,

@@ -280,10 +280,7 @@ fn create_app(state: AppState) -> Router {
             "/v1/deployments/:deployment_id/stop",
             post(handlers::deployment::stop_deployment),
         )
-        .route(
-            "/v1/deployments/:deployment_id/logs",
-            get(handlers::deployment::get_logs),
-        )
+        
         .route(
             "/v1/deployments/:deployment_id/metrics",
             get(handlers::deployment::get_metrics),
