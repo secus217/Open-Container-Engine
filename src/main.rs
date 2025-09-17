@@ -1,6 +1,4 @@
-use crate::handlers::logs as logs_handler;
 use axum::{
-    http::StatusCode,
     response::Json,
     routing::{get, post},
     Router,
@@ -15,7 +13,6 @@ use tower_http::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
 mod auth;
 mod config;
 mod database;
@@ -27,7 +24,6 @@ mod services;
 mod user;
 
 use crate::jobs::{deployment_job::DeploymentJob, deployment_worker::DeploymentWorker};
-use crate::services::kubernetes::KubernetesService;
 use config::Config;
 use database::Database;
 use error::AppError;
@@ -92,21 +88,16 @@ pub struct AppState {
     pub redis: redis::Client,
     pub config: Config,
     pub deployment_sender: mpsc::Sender<DeploymentJob>,
-    pub k8s_service: KubernetesService,
 }
 // Setup function in main.rs
 pub async fn setup_deployment_system(
     db_pool: sqlx::PgPool,
-    k8s_namespace: Option<String>,
-) -> Result<(KubernetesService, mpsc::Sender<DeploymentJob>), Box<dyn std::error::Error>> {
-    // Initialize Kubernetes service
-    let k8s_service = KubernetesService::new(k8s_namespace).await?;
-
+) -> Result<mpsc::Sender<DeploymentJob>, Box<dyn std::error::Error>> {
     // Create channel for deployment jobs
     let (deployment_sender, deployment_receiver) = mpsc::channel::<DeploymentJob>(100);
 
     // Start deployment worker
-    let worker = DeploymentWorker::new(deployment_receiver, k8s_service.clone(), db_pool);
+    let worker = DeploymentWorker::new(deployment_receiver, db_pool);
 
     tokio::spawn(async move {
         worker.start().await;
@@ -114,7 +105,7 @@ pub async fn setup_deployment_system(
 
     tracing::info!("Deployment system initialized successfully");
 
-    Ok((k8s_service, deployment_sender))
+    Ok(deployment_sender)
 }
 async fn open_browser_on_startup(port: u16) {
     tokio::spawn(async move {
@@ -171,15 +162,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     tracing::info!("Redis connection established");
     // Setup deployment system
-    let (_k8s_service, deployment_sender) =
-        setup_deployment_system(db.pool.clone(), config.kubernetes_namespace.clone()).await?;
+    let deployment_sender = setup_deployment_system(db.pool.clone()).await?;
+
     // Create app state
     let state = AppState {
         db,
         redis: redis_client,
         config: config.clone(),
         deployment_sender,
-        k8s_service: _k8s_service,
     };
 
     // Build our application with routes
@@ -317,7 +307,11 @@ fn create_app(state: AppState) -> Router {
         )
         .route(
             "/v1/deployments/:deployment_id/logs/stream",
-            get(handlers::logs::ws_logs_handler)
+            get(handlers::logs::ws_logs_handler),
+        )
+        .route(
+            "/v1/deployments/:deployment_id/logs",
+            get(handlers::logs::get_logs_handler),
         )
         // Serve static files
         .fallback_service(serve_dir)
