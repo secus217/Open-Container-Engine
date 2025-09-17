@@ -1,9 +1,9 @@
 use k8s_openapi::api::apps::v1::{Deployment as K8sDeployment, DeploymentSpec};
+use k8s_openapi::api::core::v1::Namespace;
 use k8s_openapi::api::core::v1::{
     Container, ContainerPort, EnvVar, HTTPGetAction, Probe,
     ResourceRequirements as K8sResourceRequirements, Service, ServicePort, ServiceSpec,
 };
-use k8s_openapi::api::core::v1::Namespace;
 use k8s_openapi::api::networking::v1::{
     HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
     IngressServiceBackend, IngressSpec, ServiceBackendPort,
@@ -30,24 +30,33 @@ pub struct KubernetesService {
 
 impl KubernetesService {
     pub async fn new(namespace: Option<String>) -> Result<Self, AppError> {
-        let client = Client::try_default()
-            .await
+        // Load config from custom kubeconfig file
+        let config = Self::load_kubeconfig().await?;
+        
+        let client = Client::try_from(config)
             .map_err(|e| AppError::internal(&format!("Failed to create k8s client: {}", e)))?;
+
+        // Test connection to cluster
+        Self::validate_connection(&client).await?;
 
         let namespace = namespace.unwrap_or_else(|| "default".to_string());
 
         info!(
-            "Initialized Kubernetes service for namespace: {}",
+            "Successfully initialized Kubernetes service for namespace: {}",
             namespace
         );
         Ok(Self { client, namespace })
     }
 
-    pub async fn create_deployment_namespace(&self, deployment_id: &Uuid, user_id: &Uuid) -> Result<String, AppError> {
+    pub async fn create_deployment_namespace(
+        &self,
+        deployment_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<String, AppError> {
         let namespace_name = self.generate_deployment_namespace(deployment_id);
-        
+
         let namespaces: Api<Namespace> = Api::all(self.client.clone());
-        
+
         if namespaces.get(&namespace_name).await.is_ok() {
             info!("Namespace {} already exists", namespace_name);
             return Ok(namespace_name);
@@ -57,10 +66,22 @@ impl KubernetesService {
             metadata: ObjectMeta {
                 name: Some(namespace_name.clone()),
                 labels: Some(BTreeMap::from([
-                    ("app.kubernetes.io/managed-by".to_string(), "container-engine".to_string()),
-                    ("container-engine.io/user-id".to_string(), user_id.to_string()),
-                    ("container-engine.io/deployment-id".to_string(), deployment_id.to_string()),
-                    ("container-engine.io/type".to_string(), "deployment-namespace".to_string()),
+                    (
+                        "app.kubernetes.io/managed-by".to_string(),
+                        "container-engine".to_string(),
+                    ),
+                    (
+                        "container-engine.io/user-id".to_string(),
+                        user_id.to_string(),
+                    ),
+                    (
+                        "container-engine.io/deployment-id".to_string(),
+                        deployment_id.to_string(),
+                    ),
+                    (
+                        "container-engine.io/type".to_string(),
+                        "deployment-namespace".to_string(),
+                    ),
                 ])),
                 ..Default::default()
             },
@@ -72,26 +93,152 @@ impl KubernetesService {
             .await
             .map_err(|e| AppError::internal(&format!("Failed to create namespace: {}", e)))?;
 
-        info!("Created namespace: {} for deployment: {} (user: {})", namespace_name, deployment_id, user_id);
+        info!(
+            "Created namespace: {} for deployment: {} (user: {})",
+            namespace_name, deployment_id, user_id
+        );
         Ok(namespace_name)
     }
 
     pub async fn for_deployment(deployment_id: &Uuid, user_id: &Uuid) -> Result<Self, AppError> {
-        let client = Client::try_default()
-            .await
+        // Load config from custom kubeconfig file
+        let config = Self::load_kubeconfig().await?;
+        
+        let client = Client::try_from(config)
             .map_err(|e| AppError::internal(&format!("Failed to create k8s client: {}", e)))?;
 
+        // Test connection to cluster
+        Self::validate_connection(&client).await?;
+
         let namespace = Self::generate_deployment_namespace_static(deployment_id);
-        
-        let mut service = Self { client, namespace: namespace.clone() };
-        
-        service.create_deployment_namespace(deployment_id, user_id).await?;
-        
+
+        let mut service = Self {
+            client,
+            namespace: namespace.clone(),
+        };
+
+        service
+            .create_deployment_namespace(deployment_id, user_id)
+            .await?;
+
         Ok(service)
     }
 
+    // Validate connection to Kubernetes cluster
+    async fn validate_connection(client: &Client) -> Result<(), AppError> {
+        info!("🔍 Testing connection to Kubernetes cluster...");
+        
+        // Test 1: Check API server version
+        match client.apiserver_version().await {
+            Ok(version) => {
+                info!("✅ Connected to Kubernetes API server successfully!");
+                info!("   📊 Server version: {}", version.git_version);
+                info!("   🖥️  Platform: {}", version.platform);
+                info!("   🔧 Build date: {}", version.build_date);
+            }
+            Err(e) => {
+                return Err(AppError::internal(&format!(
+                    "❌ Failed to connect to Kubernetes API server: {}. Please check your kubeconfig and cluster status.", e
+                )));
+            }
+        }
 
-   
+        // Test 2: List namespaces (basic permission test)
+        let namespaces_api: Api<Namespace> = Api::all(client.clone());
+        match namespaces_api.list(&kube::api::ListParams::default()).await {
+            Ok(namespaces) => {
+                info!("✅ Successfully listed namespaces (found: {})", namespaces.items.len());
+                
+                // Log first few namespaces
+                for (i, ns) in namespaces.items.iter().take(5).enumerate() {
+                    if let Some(name) = &ns.metadata.name {
+                        if i == 0 {
+                            info!("   📂 Available namespaces:");
+                        }
+                        info!("      - {}", name);
+                    }
+                }
+                
+                if namespaces.items.len() > 5 {
+                    info!("      ... and {} more", namespaces.items.len() - 5);
+                }
+            }
+            Err(e) => {
+                return Err(AppError::internal(&format!(
+                    "❌ Failed to list namespaces. Check cluster permissions: {}", e
+                )));
+            }
+        }
+
+        // Test 3: Check if we can access deployments
+        let test_namespace = "default";
+        let deployments_api: Api<K8sDeployment> = Api::namespaced(client.clone(), test_namespace);
+        match deployments_api.list(&kube::api::ListParams::default().limit(1)).await {
+            Ok(deployments) => {
+                info!("✅ Can access deployments in namespace '{}' (found: {})", test_namespace, deployments.items.len());
+            }
+            Err(e) => {
+                warn!("⚠️  Limited access to deployments in '{}': {}", test_namespace, e);
+                warn!("   This might be normal if using RBAC with restricted permissions");
+            }
+        }
+
+        // Test 4: Check if we can access services
+        let services_api: Api<Service> = Api::namespaced(client.clone(), test_namespace);
+        match services_api.list(&kube::api::ListParams::default().limit(1)).await {
+            Ok(services) => {
+                info!("✅ Can access services in namespace '{}' (found: {})", test_namespace, services.items.len());
+            }
+            Err(e) => {
+                warn!("⚠️  Limited access to services in '{}': {}", test_namespace, e);
+            }
+        }
+
+        info!("🚀 Kubernetes cluster connection validation completed successfully!");
+        Ok(())
+    }
+
+    // Helper method to load kubeconfig from file
+    async fn load_kubeconfig() -> Result<kube::Config, AppError> {
+        use kube::Config;
+        use std::env;
+        use std::path::Path;
+
+        // Get kubeconfig path from environment variable or use default
+        let kubeconfig_path =
+            env::var("KUBECONFIG_PATH").unwrap_or_else(|_| "./k8sConfig.yaml".to_string());
+
+        info!("📁 Attempting to load kubeconfig from: {}", kubeconfig_path);
+
+        if Path::new(&kubeconfig_path).exists() {
+            info!("✅ Found kubeconfig file at: {}", kubeconfig_path);
+
+            // Set KUBECONFIG environment variable to point to our file
+            let absolute_path = std::fs::canonicalize(&kubeconfig_path).map_err(|e| {
+                AppError::internal(&format!(
+                    "Failed to get absolute path for {}: {}",
+                    kubeconfig_path, e
+                ))
+            })?;
+
+            info!("🔗 Resolved absolute path: {}", absolute_path.display());
+            env::set_var("KUBECONFIG", &absolute_path);
+
+            Config::infer().await.map_err(|e| {
+                AppError::internal(&format!(
+                    "Failed to load kubeconfig from {}: {}",
+                    kubeconfig_path, e
+                ))
+            })
+        } else {
+            return Err(AppError::internal(&format!(
+                "❌ Kubeconfig file not found at '{}'. Please ensure the file exists and KUBECONFIG_PATH is set correctly.",
+                kubeconfig_path
+            )));
+        }
+    }
+
+    
 
     fn generate_deployment_namespace(&self, deployment_id: &Uuid) -> String {
         Self::generate_deployment_namespace_static(deployment_id)
@@ -99,8 +246,13 @@ impl KubernetesService {
 
     fn generate_deployment_namespace_static(deployment_id: &Uuid) -> String {
         format!(
-            "deploy-{}",
-            deployment_id.to_string().replace("-", "").chars().take(12).collect::<String>()
+            "open-container-engine-deploy-{}",
+            deployment_id
+                .to_string()
+                .replace("-", "")
+                .chars()
+                .take(12)
+                .collect::<String>()
         )
     }
 
@@ -111,7 +263,12 @@ impl KubernetesService {
     fn generate_user_namespace_static(user_id: &uuid::Uuid) -> String {
         format!(
             "user-{}",
-            user_id.to_string().replace("-", "").chars().take(12).collect::<String>()
+            user_id
+                .to_string()
+                .replace("-", "")
+                .chars()
+                .take(12)
+                .collect::<String>()
         )
     }
 
@@ -119,14 +276,23 @@ impl KubernetesService {
         let namespace_name = self.generate_deployment_namespace(deployment_id);
         let namespaces: Api<Namespace> = Api::all(self.client.clone());
 
-        match namespaces.delete(&namespace_name, &kube::api::DeleteParams::default()).await {
+        match namespaces
+            .delete(&namespace_name, &kube::api::DeleteParams::default())
+            .await
+        {
             Ok(_) => {
-                info!("Deleted namespace: {} for deployment: {}", namespace_name, deployment_id);
+                info!(
+                    "Deleted namespace: {} for deployment: {}",
+                    namespace_name, deployment_id
+                );
                 Ok(())
-            },
+            }
             Err(e) => {
                 warn!("Failed to delete namespace {}: {}", namespace_name, e);
-                Err(AppError::internal(&format!("Failed to delete namespace: {}", e)))
+                Err(AppError::internal(&format!(
+                    "Failed to delete namespace: {}",
+                    e
+                )))
             }
         }
     }
@@ -135,14 +301,23 @@ impl KubernetesService {
         let namespace_name = self.generate_user_namespace(user_id);
         let namespaces: Api<Namespace> = Api::all(self.client.clone());
 
-        match namespaces.delete(&namespace_name, &kube::api::DeleteParams::default()).await {
+        match namespaces
+            .delete(&namespace_name, &kube::api::DeleteParams::default())
+            .await
+        {
             Ok(_) => {
-                info!("Deleted namespace: {} for user: {}", namespace_name, user_id);
+                info!(
+                    "Deleted namespace: {} for user: {}",
+                    namespace_name, user_id
+                );
                 Ok(())
-            },
+            }
             Err(e) => {
                 warn!("Failed to delete namespace {}: {}", namespace_name, e);
-                Err(AppError::internal(&format!("Failed to delete namespace: {}", e)))
+                Err(AppError::internal(&format!(
+                    "Failed to delete namespace: {}",
+                    e
+                )))
             }
         }
     }
@@ -159,9 +334,18 @@ impl KubernetesService {
                 name: Some(service_name.clone()),
                 namespace: Some(self.namespace.clone()),
                 labels: Some(BTreeMap::from([
-                    ("app.kubernetes.io/name".to_string(), self.sanitize_app_name(&job.app_name)),
-                    ("app.kubernetes.io/managed-by".to_string(), "container-engine".to_string()),
-                    ("container-engine.io/deployment-id".to_string(), job.deployment_id.to_string()),
+                    (
+                        "app.kubernetes.io/name".to_string(),
+                        self.sanitize_app_name(&job.app_name),
+                    ),
+                    (
+                        "app.kubernetes.io/managed-by".to_string(),
+                        "container-engine".to_string(),
+                    ),
+                    (
+                        "container-engine.io/deployment-id".to_string(),
+                        job.deployment_id.to_string(),
+                    ),
                 ])),
                 ..Default::default()
             },
@@ -189,27 +373,31 @@ impl KubernetesService {
             .await
             .map_err(|e| AppError::internal(&format!("Failed to create k8s service: {}", e)))?;
 
-        info!("Created service: {} mapping external port {} -> container port 80", service_name, job.port);
+        info!(
+            "Created service: {} mapping external port {} -> container port 80",
+            service_name, job.port
+        );
         Ok(result)
     }
 
     async fn create_ingress(&self, job: &DeploymentJob) -> Result<Ingress, AppError> {
         let ingress_name = self.generate_ingress_name(&job.deployment_id);
         let service_name = self.generate_service_name(&job.deployment_id);
-        let minikube_ip = self.get_minikube_ip().await?;
-        
-        let deployment_suffix = job.deployment_id
+        let cluster_domain = self.get_cluster_domain().await?;
+
+        let deployment_suffix = job
+            .deployment_id
             .to_string()
             .replace("-", "")
             .chars()
             .take(8)
             .collect::<String>();
-        
+
         let host = format!(
-            "{}-{}.{}.nip.io",
+            "{}-{}.{}",
             self.sanitize_app_name(&job.app_name),
-            deployment_suffix, 
-            minikube_ip.replace(".", "-")
+            deployment_suffix,
+            cluster_domain
         );
 
         let ingress = Ingress {
@@ -217,18 +405,24 @@ impl KubernetesService {
                 name: Some(ingress_name.clone()),
                 namespace: Some(self.namespace.clone()),
                 labels: Some(BTreeMap::from([
-                    ("app.kubernetes.io/name".to_string(), self.sanitize_app_name(&job.app_name)),
-                    ("app.kubernetes.io/managed-by".to_string(), "container-engine".to_string()),
-                    ("container-engine.io/deployment-id".to_string(), job.deployment_id.to_string()),
+                    (
+                        "app.kubernetes.io/name".to_string(),
+                        self.sanitize_app_name(&job.app_name),
+                    ),
+                    (
+                        "app.kubernetes.io/managed-by".to_string(),
+                        "container-engine".to_string(),
+                    ),
+                    (
+                        "container-engine.io/deployment-id".to_string(),
+                        job.deployment_id.to_string(),
+                    ),
                 ])),
-                annotations: Some(BTreeMap::from([
-                    ("nginx.ingress.kubernetes.io/rewrite-target".to_string(), "/".to_string()),
-                    ("kubernetes.io/ingress.class".to_string(), "nginx".to_string()),
-                    ("nginx.ingress.kubernetes.io/ssl-redirect".to_string(), "false".to_string()),
-                ])),
+                annotations: None,
                 ..Default::default()
             },
             spec: Some(IngressSpec {
+                ingress_class_name: Some("public".to_string()),
                 rules: Some(vec![IngressRule {
                     host: Some(host.clone()),
                     http: Some(HTTPIngressRuleValue {
@@ -239,7 +433,7 @@ impl KubernetesService {
                                 service: Some(IngressServiceBackend {
                                     name: service_name,
                                     port: Some(ServiceBackendPort {
-                                        number: Some(job.port), // Sử dụng port từ job
+                                        number: Some(job.port),
                                         ..Default::default()
                                     }),
                                 }),
@@ -260,9 +454,196 @@ impl KubernetesService {
             .await
             .map_err(|e| AppError::internal(&format!("Failed to create ingress: {}", e)))?;
 
-        info!("Created ingress: {} with host: {} pointing to service port: {}", ingress_name, host, job.port);
+        info!(
+            "Created ingress: {} with host: {} pointing to service port: {}",
+            ingress_name, host, job.port
+        );
         Ok(result)
     }
+    async fn get_cluster_domain(&self) -> Result<String, AppError> {
+    use std::env;
+
+    info!("🌐 Determining cluster domain...");
+
+    // Priority order:
+    // 1. Environment variable CLUSTER_DOMAIN
+    // 2. Environment variable DOMAIN_SUFFIX  
+    // 3. Try to detect cluster type and get appropriate domain
+    // 4. Extract IP from kubeconfig and use nip.io
+
+    if let Ok(domain) = env::var("CLUSTER_DOMAIN") {
+        info!("✅ Using CLUSTER_DOMAIN from environment: {}", domain);
+        return Ok(domain);
+    }
+
+    if let Ok(domain_suffix) = env::var("DOMAIN_SUFFIX") {
+        info!("✅ Using DOMAIN_SUFFIX from environment: {}", domain_suffix);
+        return Ok(domain_suffix);
+    }
+
+    // Try to detect cluster type
+    match self.detect_cluster_type().await {
+        Ok(cluster_type) => {
+            match cluster_type.as_str() {
+                "microk8s" => {
+                    info!("🔍 Detected MicroK8s cluster, extracting IP from config...");
+                    match self.get_cluster_ip_from_config().await {
+                        Ok(ip) => {
+                            let domain = format!("{}.nip.io", ip.replace(".", "-"));
+                            info!("✅ Using MicroK8s domain: {}", domain);
+                            Ok(domain)
+                        }
+                        Err(_) => {
+                            warn!("⚠️  Failed to get cluster IP, using localhost");
+                            Ok("localhost.nip.io".to_string())
+                        }
+                    }
+                }
+                "minikube" => {
+                    info!("🔍 Detected Minikube cluster, trying to get IP...");
+                    match self.get_minikube_ip_safe().await {
+                        Ok(ip) => {
+                            let domain = format!("{}.nip.io", ip.replace(".", "-"));
+                            info!("✅ Using Minikube domain: {}", domain);
+                            Ok(domain)
+                        }
+                        Err(_) => {
+                            warn!("⚠️  Failed to get Minikube IP, using localhost");
+                            Ok("localhost.nip.io".to_string())
+                        }
+                    }
+                }
+                "kind" => {
+                    info!("🔍 Detected Kind cluster, using localhost");
+                    Ok("localhost.nip.io".to_string())
+                }
+                "docker-desktop" => {
+                    info!("🔍 Detected Docker Desktop, using localhost");
+                    Ok("localhost.nip.io".to_string())
+                }
+                _ => {
+                    info!("🔍 Unknown cluster type, trying to extract IP from config...");
+                    match self.get_cluster_ip_from_config().await {
+                        Ok(ip) => {
+                            let domain = format!("{}.nip.io", ip.replace(".", "-"));
+                            info!("✅ Using cluster IP domain: {}", domain);
+                            Ok(domain)
+                        }
+                        Err(_) => {
+                            info!("🔍 Using default configurable domain");
+                            Ok("k8s.local".to_string())
+                        }
+                    }
+                }
+            }
+        }
+        Err(_) => {
+            warn!("⚠️  Failed to detect cluster type, trying to extract IP from config...");
+            match self.get_cluster_ip_from_config().await {
+                Ok(ip) => {
+                    let domain = format!("{}.nip.io", ip.replace(".", "-"));
+                    info!("✅ Using cluster IP domain: {}", domain);
+                    Ok(domain)
+                }
+                Err(_) => {
+                    warn!("⚠️  Failed to get cluster IP, using default domain");
+                    Ok("k8s.local".to_string())
+                }
+            }
+        }
+    }
+}
+
+// Add new method to extract IP from kubeconfig
+async fn get_cluster_ip_from_config(&self) -> Result<String, AppError> {
+    use std::env;
+    use std::path::Path;
+    
+    info!("🔍 Extracting cluster IP from kubeconfig...");
+
+    let kubeconfig_path = env::var("KUBECONFIG_PATH").unwrap_or_else(|_| "./k8sConfig.yaml".to_string());
+    
+    if !Path::new(&kubeconfig_path).exists() {
+        return Err(AppError::internal("Kubeconfig file not found"));
+    }
+
+    let content = tokio::fs::read_to_string(&kubeconfig_path).await
+        .map_err(|e| AppError::internal(&format!("Failed to read kubeconfig: {}", e)))?;
+
+    // Parse YAML to extract server URL
+    let config: serde_yaml::Value = serde_yaml::from_str(&content)
+        .map_err(|e| AppError::internal(&format!("Failed to parse kubeconfig YAML: {}", e)))?;
+
+    info!("🔧 Parsed kubeconfig structure: {:?}", config.get("clusters"));
+
+    if let Some(clusters) = config.get("clusters").and_then(|c| c.as_sequence()) {
+        info!("📋 Found {} clusters", clusters.len());
+        
+        if let Some(cluster) = clusters.first() {
+            if let Some(server) = cluster.get("cluster")
+                .and_then(|c| c.get("server"))
+                .and_then(|s| s.as_str()) {
+                
+                info!("🔗 Server URL: {}", server);
+                
+                // Extract IP from server URL (e.g., "https://192.168.91.101:16443")
+                if let Some(url_part) = server.strip_prefix("https://") {
+                    if let Some(ip_port) = url_part.split(':').next() {
+                        info!("✅ Extracted cluster IP: {}", ip_port);
+                        return Ok(ip_port.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    Err(AppError::internal("Failed to extract cluster IP from kubeconfig"))
+}
+
+// Update detect_cluster_type to recognize MicroK8s
+async fn detect_cluster_type(&self) -> Result<String, AppError> {
+    // Check if running in Kind
+    if let Ok(_) = std::env::var("KIND_CLUSTER_NAME") {
+        return Ok("kind".to_string());
+    }
+    
+    // Check context name for cluster type
+    if let Ok(output) = Command::new("kubectl")
+        .args(["config", "current-context"])
+        .output()
+        .await
+    {
+        if output.status.success() {
+            let context = String::from_utf8_lossy(&output.stdout).to_lowercase();
+            if context.contains("microk8s") {
+                return Ok("microk8s".to_string());
+            }
+            if context.contains("docker-desktop") {
+                return Ok("docker-desktop".to_string());
+            }
+            if context.contains("kind") {
+                return Ok("kind".to_string());
+            }
+            if context.contains("minikube") {
+                return Ok("minikube".to_string());
+            }
+        }
+    }
+    
+    // Get cluster info from API server
+    match self.client.apiserver_version().await {
+        Ok(version) => {
+            let git_version = version.git_version.to_lowercase();
+            
+            if git_version.contains("minikube") {
+                return Ok("minikube".to_string());
+            }
+            
+            Ok("unknown".to_string())
+        }
+        Err(e) => Err(AppError::internal(&format!("Failed to get cluster info: {}", e)))
+    }
+}
 
     async fn get_pod_name(&self, deployment_id: &Uuid) -> Result<String, AppError> {
         use k8s_openapi::api::core::v1::Pod;
@@ -374,21 +755,24 @@ impl KubernetesService {
         }
     }
 
-    async fn get_minikube_ip(&self) -> Result<String, AppError> {
-        info!("Getting Minikube IP address...");
+    
+
+    // Safe method to get Minikube IP without failing
+    async fn get_minikube_ip_safe(&self) -> Result<String, AppError> {
+        info!("🔍 Attempting to get Minikube IP...");
 
         let output = Command::new("minikube")
             .arg("ip")
             .output()
             .await
             .map_err(|e| {
-                AppError::internal(&format!("Failed to execute 'minikube ip' command: {}", e))
+                AppError::internal(&format!("Minikube command not available: {}", e))
             })?;
 
         if !output.status.success() {
             let error_msg = String::from_utf8_lossy(&output.stderr);
             return Err(AppError::internal(&format!(
-                "Minikube command failed: {}",
+                "Minikube IP command failed: {}",
                 error_msg
             )));
         }
@@ -399,25 +783,36 @@ impl KubernetesService {
             .to_string();
 
         if ip.is_empty() {
-            return Err(AppError::internal("Minikube returned empty IP address"));
+            return Err(AppError::internal("Minikube returned empty IP"));
         }
 
-        info!("Minikube IP: {}", ip);
+        info!("✅ Minikube IP: {}", ip);
         Ok(ip)
     }
 
+   
+
+    // Keep the old method name for backward compatibility, but make it flexible
+    async fn get_minikube_ip(&self) -> Result<String, AppError> {
+        // This method now delegates to the more flexible get_cluster_domain
+        self.get_cluster_domain().await
+    }
+
     pub async fn deploy_application(&self, job: &DeploymentJob) -> Result<(), AppError> {
-        info!("Deploying application: {} to Kubernetes on port: {}", job.app_name, job.port);
+        info!(
+            "Deploying application: {} to Kubernetes on port: {}",
+            job.app_name, job.port
+        );
 
         // Create deployment first
         self.create_deployment(job).await?;
 
         // Create service with correct port
         self.create_service(job).await?;
-        
+
         // Create ingress pointing to correct service port
         self.create_ingress(job).await?;
-        
+
         info!(
             "Successfully created Kubernetes resources for: {} on port {}",
             job.app_name, job.port
@@ -500,7 +895,10 @@ impl KubernetesService {
             .await
             .map_err(|e| AppError::internal(&format!("Failed to create k8s deployment: {}", e)))?;
 
-        info!("Created k8s deployment: {} on port {}", deployment_name, job.port);
+        info!(
+            "Created k8s deployment: {} on port {}",
+            deployment_name, job.port
+        );
         Ok(result)
     }
 
@@ -554,37 +952,58 @@ impl KubernetesService {
         }
     }
 
-    pub async fn scale_deployment(&self, deployment_id: &Uuid, replicas: i32) -> Result<(), AppError> {
+    pub async fn scale_deployment(
+        &self,
+        deployment_id: &Uuid,
+        replicas: i32,
+    ) -> Result<(), AppError> {
         let deployment_name = self.generate_deployment_name(deployment_id);
         let deployments: Api<K8sDeployment> = Api::namespaced(self.client.clone(), &self.namespace);
 
-        let mut deployment = deployments
-            .get(&deployment_name)
-            .await
-            .map_err(|e| AppError::internal(&format!("Failed to get deployment {}: {}", deployment_name, e)))?;
+        let mut deployment = deployments.get(&deployment_name).await.map_err(|e| {
+            AppError::internal(&format!(
+                "Failed to get deployment {}: {}",
+                deployment_name, e
+            ))
+        })?;
 
         if let Some(spec) = deployment.spec.as_mut() {
             spec.replicas = Some(replicas);
         }
 
         deployments
-            .replace(&deployment_name, &kube::api::PostParams::default(), &deployment)
+            .replace(
+                &deployment_name,
+                &kube::api::PostParams::default(),
+                &deployment,
+            )
             .await
-            .map_err(|e| AppError::internal(&format!("Failed to scale deployment {}: {}", deployment_name, e)))?;
+            .map_err(|e| {
+                AppError::internal(&format!(
+                    "Failed to scale deployment {}: {}",
+                    deployment_name, e
+                ))
+            })?;
 
-        info!("Scaled deployment {} to {} replicas", deployment_name, replicas);
+        info!(
+            "Scaled deployment {} to {} replicas",
+            deployment_name, replicas
+        );
         Ok(())
     }
 
     pub async fn delete_deployment(&self, deployment_id: &Uuid) -> Result<(), AppError> {
         info!("Deleting deployment namespace: {}", self.namespace);
-        
+
         // Chỉ cần delete namespace, tất cả resources sẽ tự động bị xóa
         let result = self.delete_deployment_namespace(deployment_id).await;
-        
+
         match result {
             Ok(_) => {
-                info!("Successfully deleted deployment {} and all its resources", deployment_id);
+                info!(
+                    "Successfully deleted deployment {} and all its resources",
+                    deployment_id
+                );
                 Ok(())
             }
             Err(e) => {

@@ -210,7 +210,7 @@ pub async fn get_logs_handler(
     State(state): State<AppState>,
     Path(deployment_id): Path<Uuid>,
     Query(query): Query<LogsQuery>,
-    user: AuthUser, // Sử dụng AuthUser từ auth system hiện tại
+    user: AuthUser, 
 ) -> Result<axum::response::Json<LogsResponse>, AppError> {
     // Verify deployment ownership
     if !verify_deployment_ownership(&state, deployment_id, user.user_id).await? {

@@ -1,3 +1,6 @@
+# Kubernetes config files
+k8sConfig.yaml
+*.kubeconfig
 # Rust
 /target/
 Cargo.lock
