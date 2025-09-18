@@ -81,7 +81,7 @@ const NewDeploymentPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50">
         {/* Loading Overlay */}
         {loading && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -91,7 +91,7 @@ const NewDeploymentPage: React.FC = () => {
                   {/* Outer spinning ring */}
                   <div className="absolute inset-0 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
                   {/* Inner pulsing circle */}
-                  <div className="absolute inset-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse flex items-center justify-center">
+                  <div className="absolute inset-2 bg-linear-to-r from-blue-500 to-purple-500 rounded-full animate-pulse flex items-center justify-center">
                     <RocketLaunchIcon className="h-8 w-8 text-white" />
                   </div>
                 </div>
@@ -157,7 +157,7 @@ const NewDeploymentPage: React.FC = () => {
           <div className="max-w-4xl mx-auto">
             <div className={`bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transition-all duration-300 ${loading ? 'opacity-75 pointer-events-none' : ''}`}>
               {/* Form Header */}
-              <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600">
+              <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-purple-600">
                 <h2 className="text-2xl font-bold text-white flex items-center">
                   <CloudIcon className="h-6 w-6 mr-3" />
                   Deployment Configuration
@@ -375,7 +375,7 @@ const NewDeploymentPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium flex items-center disabled:transform-none"
+                      className="px-8 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium flex items-center disabled:transform-none"
                     >
                       {loading ? (
                         <>

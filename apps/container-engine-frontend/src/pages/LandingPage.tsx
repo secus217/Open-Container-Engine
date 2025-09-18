@@ -37,16 +37,16 @@ const LandingPage: React.FC = () => {
                 <nav className="container mx-auto px-6 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-lg">CE</span>
                             </div>
-                            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                            <span className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                                 Container Engine
                             </span>
                         </div>
                         <div className="flex items-center space-x-6">
-                            <a href="https://decenter.ai/" target="_blank" rel="noopener noreferrer" 
-                               className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+                            <a href="https://decenter.ai/" target="_blank" rel="noopener noreferrer"
+                                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 font-medium transition-colors group">
                                 <div className="w-5 h-5 bg-black rounded-sm flex items-center justify-center group-hover:bg-blue-600 transition-colors">
                                     <span className="text-white text-xs font-bold">D</span>
                                 </div>
@@ -58,8 +58,8 @@ const LandingPage: React.FC = () => {
                             <a href="#pricing" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 Pricing
                             </a>
-                            <Link to="/auth" 
-                                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl">
+                            <Link to="/auth"
+                                className="px-6 py-2.5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl">
                                 Get Started
                             </Link>
                         </div>
@@ -68,26 +68,28 @@ const LandingPage: React.FC = () => {
             </header>
 
             {/* Hero Section */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pt-20 pb-32">
+            <section className="relative overflow-hidden bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 pt-20 pb-32">
                 <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
                 <div className="container mx-auto px-6 text-center relative">
                     <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-8">
                         🚀 Now supporting Kubernetes 1.28+
                     </div>
-                    <h1 className="text-6xl md:text-7xl font-extrabold mb-8 leading-tight">
+                    <h1 className="text-6xl md:text-7xl text-red font-extrabold mb-8 leading-tight">
                         Deploy Containers
-                        <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        <span className="block bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                             in Seconds
                         </span>
                     </h1>
                     <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-                        The open-source alternative to Google Cloud Run. Built with Rust & Axum for 
+                        The open-source alternative to Google Cloud Run. Built with Rust & Axum for
                         enterprise-grade performance and reliability.
                     </p>
-                    
+
+                  
+
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-12">
-                        <Link to="/auth" 
-                              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
+                        <Link to="/auth"
+                            className="px-8 py-4 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
                             Start Free Trial
                         </Link>
                         <button className="flex items-center px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold text-lg hover:border-blue-600 hover:text-blue-600 transition-all duration-200">
@@ -110,8 +112,8 @@ const LandingPage: React.FC = () => {
                                 <span className="text-gray-500 text-lg">Dashboard Preview</span>
                             </div>
                         </div>
-                        <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-20 blur-xl"></div>
-                        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-20 blur-xl"></div>
+                        <div className="absolute -top-4 -right-4 w-24 h-24 bg-linear-to-r from-green-400 to-blue-500 rounded-full opacity-20 blur-xl"></div>
+                        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-linear-to-r from-purple-400 to-pink-400 rounded-full opacity-20 blur-xl"></div>
                     </div>
                 </div>
             </section>
@@ -141,13 +143,13 @@ const LandingPage: React.FC = () => {
                             Built for developers who demand simplicity without sacrificing power
                         </p>
                     </div>
-                    
+
                     <div className="grid md:grid-cols-3 gap-8 mb-16">
                         {features.map((feature) => (
-                            <div key={feature.name} 
-                                 className="group relative p-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                            <div key={feature.name}
+                                className="group relative p-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
                                 <div className="absolute -top-4 left-8">
-                                    <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                                    <div className="w-12 h-12 bg-linear-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                                         <feature.icon className="w-6 h-6 text-white" />
                                     </div>
                                 </div>
@@ -193,7 +195,7 @@ const LandingPage: React.FC = () => {
                                 <span className="ml-4 text-gray-400 text-sm">terminal</span>
                             </div>
                             <pre className="text-green-400 text-sm">
-{`curl -X POST https://api.decenter.run/deploy \\
+                                {`curl -X POST https://api.decenter.run/deploy \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -207,22 +209,22 @@ const LandingPage: React.FC = () => {
                 </div>
             </section>
 
-           
+
 
             {/* CTA Section */}
-            <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+            <section className="py-20 bg-linear-to-r from-blue-600 to-indigo-700 text-white">
                 <div className="container mx-auto px-6 text-center">
                     <h2 className="text-5xl font-bold mb-6">Ready to Deploy?</h2>
                     <p className="text-xl mb-12 opacity-90 max-w-3xl mx-auto">
                         Join thousands of developers who have already simplified their deployment process
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
-                        <Link to="/auth" 
-                              className="px-8 py-4 bg-white text-blue-600 font-bold rounded-xl text-lg hover:bg-gray-100 transition-colors shadow-xl">
+                        <Link to="/auth"
+                            className="px-8 py-4 bg-white text-blue-600 font-bold rounded-xl text-lg hover:bg-gray-100 transition-colors shadow-xl">
                             Start Free Trial
                         </Link>
                         <a href="https://github.com/AI-Decenter/Open-Container-Engine" target="_blank" rel="noopener noreferrer"
-                           className="px-8 py-4 border-2 border-white text-white font-bold rounded-xl text-lg hover:bg-white hover:text-blue-600 transition-colors">
+                            className="px-8 py-4 border-2 border-white text-white font-bold rounded-xl text-lg hover:bg-white hover:text-blue-600 transition-colors">
                             View on GitHub
                         </a>
                     </div>
@@ -238,7 +240,7 @@ const LandingPage: React.FC = () => {
                     <div className="grid md:grid-cols-4 gap-8 mb-8">
                         <div>
                             <div className="flex items-center space-x-3 mb-4">
-                                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                                <div className="w-8 h-8 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                                     <span className="text-white font-bold">CE</span>
                                 </div>
                                 <span className="text-xl font-bold text-white">Container Engine</span>
