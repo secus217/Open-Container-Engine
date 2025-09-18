@@ -6,7 +6,7 @@ import DashboardLayout from '../components/Layout/DashboardLayout'; // Layout v�
 interface DashboardStats {
   deploymentCount: number;
   apiKeyCount: number;
-  // Thêm các metrics khác nếu API hỗ trợ
+  // Add more metrics if API supports them
 }
 
 const DashboardPage: React.FC = () => {

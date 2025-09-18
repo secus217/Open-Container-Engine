@@ -698,7 +698,7 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
         }
 
         let mut log_params = LogParams {
-            follow: false, // Không follow để tránh timeout
+            follow: false, // Don't follow to avoid timeout
             previous: false,
             since_seconds: None,
             timestamps: true,
@@ -770,7 +770,7 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
         Ok(logs)
     }
 
-    // Method riêng cho WebSocket streaming thực sự (với follow=true)
+    // Dedicated method for real WebSocket streaming (with follow=true)
     pub async fn stream_logs_realtime(
         &self,
         deployment_id: &Uuid,
@@ -1122,7 +1122,7 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
     pub async fn delete_deployment(&self, deployment_id: &Uuid) -> Result<(), AppError> {
         info!("Deleting deployment namespace: {}", self.namespace);
 
-        // Chỉ cần delete namespace, tất cả resources sẽ tự động bị xóa
+        // Only need to delete namespace, all resources will be automatically deleted
         let result = self.delete_deployment_namespace(deployment_id).await;
 
         match result {

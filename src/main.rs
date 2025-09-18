@@ -207,7 +207,7 @@ fn create_app(state: AppState) -> Router {
     } else {
         tracing::info!("Serving frontend from: {}", frontend_path);
 
-        // Kiểm tra file index.html
+        // Check index.html file
         let index_exists = std::path::Path::new(&format!("{}/index.html", frontend_path)).exists();
         if !index_exists {
             tracing::warn!("index.html not found in frontend directory");
