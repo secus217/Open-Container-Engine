@@ -74,8 +74,9 @@ COPY --from=frontend-builder /app/dist ./apps/container-engine-frontend/dist
 # Copy migrations
 COPY --from=backend-builder /app/migrations ./migrations
 
-# Copy configuration files if needed
-COPY k8sConfig.yaml* ./
+# Note: k8sConfig.yaml should be mounted at runtime
+# User should create k8sConfig.yaml locally and mount it with:
+# docker run -v $(pwd)/k8sConfig.yaml:/app/k8sConfig.yaml:ro
 
 # Change ownership to app user
 RUN chown -R appuser:appuser /app
