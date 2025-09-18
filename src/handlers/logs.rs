@@ -175,7 +175,6 @@ async fn authenticate_websocket_user(
     state: &AppState,
     token: Option<String>,
 ) -> Result<Uuid, AppError> {
-    info!("Authenticating WebSocket user with token: {:?}", token.as_ref().map(|t| &t[..10]));
     
     let token = token.ok_or_else(|| {
         error!("No token provided for WebSocket authentication");
@@ -184,7 +183,6 @@ async fn authenticate_websocket_user(
     
     // Remove "Bearer " prefix if present
     let token = token.strip_prefix("Bearer ").unwrap_or(&token);
-    info!("Processing token (first 10 chars): {}", &token[..10.min(token.len())]);
     
     // Use your existing JWT verification logic
     let jwt_manager = JwtManager::new(&state.config.jwt_secret, state.config.jwt_expires_in);
@@ -200,7 +198,6 @@ async fn authenticate_websocket_user(
             AppError::auth("Invalid token format")
         })?;
     
-    info!("Extracted user_id from token: {}", user_id);
     
     // Verify user exists and is active in database
     let user_exists = sqlx::query!(

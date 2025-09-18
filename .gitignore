@@ -16,6 +16,7 @@ Cargo.lock
 Thumbs.db
 
 # Environment
+.env.production
 .env
 .env.local
 

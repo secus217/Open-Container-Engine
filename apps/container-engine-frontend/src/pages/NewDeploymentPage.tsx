@@ -65,10 +65,26 @@ const NewDeploymentPage: React.FC = () => {
         replicas,
       });
 
-      setSuccess(`Deployment '${response.data.app_name}' created successfully!`);
+      console.log('Deployment created:', response.data);
 
-      if (response && response.data.id) {
-        navigate(`/deployments/${response.data.id}`);
+      // Verify we have the deployment ID
+      if (response.data && response.data.id) {
+        setSuccess(`Deployment '${response.data.app_name}' created successfully! Redirecting...`);
+        
+        // Small delay to ensure backend has processed the deployment
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Optional: Poll deployment status before redirecting
+        const deploymentReady = await checkDeploymentReady(response.data.id);
+        if (deploymentReady) {
+          // Navigate to deployment detail page
+          navigate(`/deployments/${response.data.id}`);
+        } else {
+          setError('Deployment created, but we could not verify its status. Please check manually.');
+        }
+
+      } else {
+        throw new Error('Deployment created but no ID returned');
       }
 
     } catch (err: any) {
@@ -77,6 +93,22 @@ const NewDeploymentPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Optional: Poll deployment status before redirecting
+  const checkDeploymentReady = async (deploymentId: string, maxAttempts = 10) => {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const statusResponse = await api.get(`/v1/deployments/${deploymentId}`);
+        if (statusResponse.data && statusResponse.data.id) {
+          return true;
+        }
+      } catch (err) {
+        console.log(`Attempt ${i + 1}: Deployment not ready yet`);
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    return false;
   };
 
   return (
