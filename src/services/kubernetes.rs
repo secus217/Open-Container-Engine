@@ -673,13 +673,35 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<Bytes, std::io::Error>> + Send>>, AppError> {
         use k8s_openapi::api::core::v1::Pod;
         use kube::api::{Api, LogParams};
+        use tokio::time::{timeout, Duration};
 
-        let pod_name = self.get_pod_name(deployment_id).await?;
+        // Get pod name with timeout
+        let pod_name = timeout(Duration::from_secs(10), self.get_pod_name(deployment_id))
+            .await
+            .map_err(|_| AppError::internal("Timeout while getting pod name"))?
+            .map_err(|e| AppError::internal(&format!("Failed to get pod name: {}", e)))?;
+        
         tracing::info!("Streaming logs from pod: {}", pod_name);
         let pods: Api<Pod> = Api::namespaced(self.client.clone(), &self.namespace);
 
+        // Check if pod exists and is ready first
+        let pod = pods.get(&pod_name).await
+            .map_err(|e| AppError::internal(&format!("Pod {} not found: {}", pod_name, e)))?;
+
+        if let Some(status) = &pod.status {
+            if let Some(phase) = &status.phase {
+                tracing::info!("Pod {} is in phase: {}", pod_name, phase);
+                if phase != "Running" && phase != "Succeeded" {
+                    return Err(AppError::internal(&format!("Pod {} is not ready (phase: {})", pod_name, phase)));
+                }
+            }
+        }
+
         let mut log_params = LogParams {
-            follow: true,
+            follow: false, // Không follow để tránh timeout
+            previous: false,
+            since_seconds: None,
+            timestamps: true,
             ..Default::default()
         };
 
@@ -687,6 +709,111 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
             log_params.tail_lines = Some(tail);
         }
 
+        // Get logs with timeout
+        let logs_result = timeout(
+            Duration::from_secs(30),
+            pods.logs(&pod_name, &log_params)
+        )
+        .await
+        .map_err(|_| AppError::internal("Timeout while fetching logs"))?
+        .map_err(|e| AppError::internal(&format!("Failed to fetch logs: {}", e)))?;
+
+        // Convert string logs to stream
+        let lines: Vec<String> = logs_result
+            .lines()
+            .map(|line| format!("{}\n", line))
+            .collect();
+
+        let stream = futures_util::stream::iter(
+            lines.into_iter().map(|line| Ok(Bytes::from(line)))
+        );
+
+        Ok(Box::pin(stream))
+    }
+
+    pub async fn get_logs(
+        &self,
+        deployment_id: &Uuid,
+        tail_lines: Option<i64>,
+    ) -> Result<String, AppError> {
+        use k8s_openapi::api::core::v1::Pod;
+        use kube::api::{Api, LogParams};
+        use tokio::time::{timeout, Duration};
+
+        let pod_name = timeout(Duration::from_secs(10), self.get_pod_name(deployment_id))
+            .await
+            .map_err(|_| AppError::internal("Timeout while getting pod name"))?
+            .map_err(|e| AppError::internal(&format!("Failed to get pod name: {}", e)))?;
+        
+        tracing::info!("Getting logs from pod: {}", pod_name);
+        let pods: Api<Pod> = Api::namespaced(self.client.clone(), &self.namespace);
+
+        let mut log_params = LogParams {
+            follow: false,
+            previous: false,
+            timestamps: true,
+            ..Default::default()
+        };
+
+        if let Some(tail) = tail_lines {
+            log_params.tail_lines = Some(tail);
+        }
+
+        let logs = timeout(
+            Duration::from_secs(15),
+            pods.logs(&pod_name, &log_params)
+        )
+        .await
+        .map_err(|_| AppError::internal("Timeout while fetching logs"))?
+        .map_err(|e| AppError::internal(&format!("Failed to fetch logs: {}", e)))?;
+
+        Ok(logs)
+    }
+
+    // Method riêng cho WebSocket streaming thực sự (với follow=true)
+    pub async fn stream_logs_realtime(
+        &self,
+        deployment_id: &Uuid,
+        tail_lines: Option<i64>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<Bytes, std::io::Error>> + Send>>, AppError> {
+        use k8s_openapi::api::core::v1::Pod;
+        use kube::api::{Api, LogParams};
+        use tokio::time::{timeout, Duration};
+
+        let pod_name = timeout(Duration::from_secs(10), self.get_pod_name(deployment_id))
+            .await
+            .map_err(|_| AppError::internal("Timeout while getting pod name"))?
+            .map_err(|e| AppError::internal(&format!("Failed to get pod name: {}", e)))?;
+        
+        tracing::info!("Real-time streaming logs from pod: {}", pod_name);
+        let pods: Api<Pod> = Api::namespaced(self.client.clone(), &self.namespace);
+
+        // Check if pod exists and is ready first
+        let pod = pods.get(&pod_name).await
+            .map_err(|e| AppError::internal(&format!("Pod {} not found: {}", pod_name, e)))?;
+
+        if let Some(status) = &pod.status {
+            if let Some(phase) = &status.phase {
+                tracing::info!("Pod {} is in phase: {}", pod_name, phase);
+                if phase != "Running" && phase != "Succeeded" {
+                    return Err(AppError::internal(&format!("Pod {} is not ready (phase: {})", pod_name, phase)));
+                }
+            }
+        }
+
+        let mut log_params = LogParams {
+            follow: true, // Enable real-time streaming
+            previous: false,
+            since_seconds: None,
+            timestamps: true,
+            ..Default::default()
+        };
+
+        if let Some(tail) = tail_lines {
+            log_params.tail_lines = Some(tail);
+        }
+
+        // Create log stream for real-time following
         let async_buf_read = pods
             .log_stream(&pod_name, &log_params)
             .await

@@ -116,11 +116,12 @@ async fn handle_socket_with_user_internal(
     };
 
     // Start streaming logs
-    match k8s_service.stream_logs(&deployment_id, query.tail).await {
+    match k8s_service.stream_logs_realtime(&deployment_id, query.tail).await {
         Ok(mut log_stream) => {
             info!("Started log stream for deployment: {} (user: {})", deployment_id, user_id);
 
-            // Stream logs to client (without receiver since we only have sender)
+            // Send initial logs from stream
+            let mut line_count = 0;
             while let Some(result) = log_stream.next().await {
                 match result {
                     Ok(bytes) => {
@@ -129,10 +130,26 @@ async fn handle_socket_with_user_internal(
                             error!("Failed to send log: {}", e);
                             break;
                         }
+                        line_count += 1;
                     }
                     Err(e) => {
                         error!("Error reading log stream: {}", e);
                         let _ = sender.send(Message::Text(format!("Error: {}", e))).await;
+                        break;
+                    }
+                }
+            }
+
+            // If we have logs, keep connection open for potential new logs
+            if line_count > 0 {
+                let _ = sender.send(Message::Text("--- End of current logs ---".to_string())).await;
+                
+                // Keep WebSocket connection alive for potential future logs
+                // This is a simple keepalive mechanism
+                let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(30));
+                for _ in 0..10 { // Keep alive for 5 minutes
+                    interval.tick().await;
+                    if sender.send(Message::Ping(vec![])).await.is_err() {
                         break;
                     }
                 }
@@ -158,17 +175,32 @@ async fn authenticate_websocket_user(
     state: &AppState,
     token: Option<String>,
 ) -> Result<Uuid, AppError> {
-    let token = token.ok_or_else(|| AppError::auth("Token required"))?;
+    info!("Authenticating WebSocket user with token: {:?}", token.as_ref().map(|t| &t[..10]));
+    
+    let token = token.ok_or_else(|| {
+        error!("No token provided for WebSocket authentication");
+        AppError::auth("Token required")
+    })?;
     
     // Remove "Bearer " prefix if present
     let token = token.strip_prefix("Bearer ").unwrap_or(&token);
+    info!("Processing token (first 10 chars): {}", &token[..10.min(token.len())]);
     
     // Use your existing JWT verification logic
     let jwt_manager = JwtManager::new(&state.config.jwt_secret, state.config.jwt_expires_in);
-    let claims = jwt_manager.verify_token(token)?;
+    let claims = jwt_manager.verify_token(token)
+        .map_err(|e| {
+            error!("JWT verification failed: {}", e);
+            e
+        })?;
     
     let user_id = Uuid::parse_str(&claims.sub)
-        .map_err(|_| AppError::auth("Invalid token format"))?;
+        .map_err(|e| {
+            error!("Invalid UUID in token claims: {}", e);
+            AppError::auth("Invalid token format")
+        })?;
+    
+    info!("Extracted user_id from token: {}", user_id);
     
     // Verify user exists and is active in database
     let user_exists = sqlx::query!(
@@ -177,11 +209,20 @@ async fn authenticate_websocket_user(
     )
     .fetch_optional(&state.db.pool)
     .await
-    .map_err(|e| AppError::internal(&format!("Database error: {}", e)))?;
+    .map_err(|e| {
+        error!("Database error during user verification: {}", e);
+        AppError::internal(&format!("Database error: {}", e))
+    })?;
     
     match user_exists {
-        Some(_) => Ok(user_id),
-        None => Err(AppError::auth("User not found or inactive")),
+        Some(_) => {
+            info!("User {} authenticated successfully for WebSocket", user_id);
+            Ok(user_id)
+        }
+        None => {
+            error!("User {} not found or inactive", user_id);
+            Err(AppError::auth("User not found or inactive"))
+        }
     }
 }
 
@@ -219,39 +260,8 @@ pub async fn get_logs_handler(
 
     let k8s_service = KubernetesService::for_deployment(&deployment_id, &user.user_id).await?;
 
-    // Get logs (non-streaming)
-    let mut log_stream = k8s_service.stream_logs(&deployment_id, query.tail).await?;
-    
-    let mut logs = String::new();
-    let mut line_count = 0;
-    let max_lines = 1000; // Limit for HTTP response
-
-    while let Some(result) = log_stream.next().await {
-        match result {
-            Ok(bytes) => {
-                let text = String::from_utf8_lossy(&bytes);
-                logs.push_str(&text);
-                line_count += 1;
-                
-                // Limit response size for HTTP endpoint
-                if line_count >= max_lines {
-                    logs.push_str("\n... (truncated, use WebSocket for full streaming)\n");
-                    break;
-                }
-            }
-            Err(e) => {
-                error!("Error reading log stream: {}", e);
-                break;
-            }
-        }
-        
-        // Add a small timeout for HTTP response
-        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        if line_count > 0 && line_count % 100 == 0 {
-            // Break after reasonable amount for HTTP response
-            break;
-        }
-    }
+    // Use the new get_logs method instead of stream_logs for HTTP endpoint
+    let logs = k8s_service.get_logs(&deployment_id, query.tail).await?;
 
     Ok(axum::response::Json(LogsResponse { logs }))
 }

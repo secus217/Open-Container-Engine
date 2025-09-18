@@ -96,6 +96,7 @@ const DeploymentDetailPage: React.FC = () => {
 
     const fetchData = async () => {
       try {
+        
         setLoading(true);
         const [detailsRes, logsRes] = await Promise.all([
           api.get(`/v1/deployments/${deploymentId}`),
@@ -113,7 +114,7 @@ const DeploymentDetailPage: React.FC = () => {
     };
 
     fetchData();
-  }, [deploymentId]);
+  }, []);
 
   const handleScale = async () => {
     try {
