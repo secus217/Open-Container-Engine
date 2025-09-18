@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 import { useParams } from 'react-router-dom';
-import api from '../../lib/api';
+import api from '../../api/api';
 
 export default function LogsPage() {
   const { deploymentId } = useParams();

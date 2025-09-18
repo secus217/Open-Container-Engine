@@ -1,7 +1,7 @@
 // src/pages/DeploymentDetailPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../lib/api';
+import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import LogsPage from '../components/DeploymentDetail/LogsPage';
 import {

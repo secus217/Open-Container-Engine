@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import api from '../lib/api';
+import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import {
   PlusIcon,

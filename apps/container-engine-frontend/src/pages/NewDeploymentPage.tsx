@@ -1,6 +1,6 @@
 // src/pages/NewDeploymentPage.tsx
 import React, { useState } from 'react';
-import api from '../lib/api';
+import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
 import {

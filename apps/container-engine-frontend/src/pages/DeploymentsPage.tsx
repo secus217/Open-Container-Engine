@@ -1,6 +1,6 @@
 // src/pages/DeploymentsPage.tsx
 import React, { useEffect, useState } from 'react';
-import api from '../lib/api';
+import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow, parseISO } from 'date-fns';

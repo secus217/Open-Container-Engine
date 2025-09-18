@@ -1,6 +1,6 @@
 // src/pages/DashboardPage.tsx
 import React, { useEffect, useState } from 'react';
-import api from '../lib/api';
+import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout'; // Layout với Sidebar, Header
 
 interface DashboardStats {
