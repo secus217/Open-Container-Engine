@@ -1,7 +1,7 @@
 // src/pages/LandingPage.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowPathIcon, CloudArrowUpIcon, FingerPrintIcon, CheckIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, CloudArrowUpIcon, FingerPrintIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 const features = [
     {
@@ -87,16 +87,7 @@ const LandingPage: React.FC = () => {
 
                   
 
-                    <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-12">
-                        <Link to="/auth"
-                            className="px-8 py-4 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                            Start Free Trial
-                        </Link>
-                        <button className="flex items-center px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold text-lg hover:border-blue-600 hover:text-blue-600 transition-all duration-200">
-                            <PlayIcon className="w-5 h-5 mr-2" />
-                            Watch Demo
-                        </button>
-                    </div>
+                
 
                     {/* Trust Indicators */}
                     <div className="flex justify-center items-center space-x-8 mb-16">
@@ -105,11 +96,95 @@ const LandingPage: React.FC = () => {
                         <img src="https://github.com/AI-Decenter/Open-Container-Engine" alt="GitHub Stars" className="h-6" />
                     </div>
 
-                    {/* Hero Image/Dashboard Preview */}
+                    {/* Architecture Image with Mouse Wheel Zoom */}
                     <div className="relative max-w-6xl mx-auto">
                         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4">
-                            <div className="bg-gray-100 rounded-xl h-96 flex items-center justify-center">
-                                <span className="text-gray-500 text-lg">Dashboard Preview</span>
+                            <div 
+                                className="relative rounded-xl overflow-hidden group"
+                                style={{ cursor: 'grab' }}
+                                onMouseEnter={() => {
+                                    document.body.style.overflow = 'hidden';
+                                }}
+                                onMouseLeave={() => {
+                                    document.body.style.overflow = 'auto';
+                                }}
+                                onWheel={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const img = e.currentTarget.querySelector('img') as HTMLImageElement;
+                                    if (!img) return;
+                                    
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = e.clientX - rect.left;
+                                    const y = e.clientY - rect.top;
+                                    
+                                    const delta = e.deltaY * -0.005;
+                                    const currentTransform = img.style.transform;
+                                    const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+                                    const currentScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+                                    const newScale = Math.min(Math.max(0.5, currentScale + delta), 3);
+                                    
+                                    img.style.transformOrigin = `${x}px ${y}px`;
+                                    img.style.transform = `scale(${newScale})`;
+                                    img.style.transition = 'transform 0.1s ease-out';
+                                }}
+                                onMouseDown={(e) => {
+                                    const container = e.currentTarget;
+                                    const img = container.querySelector('img') as HTMLImageElement;
+                                    if (!img) return;
+                                    
+                                    container.style.cursor = 'grabbing';
+                                    let startX = e.clientX;
+                                    let startY = e.clientY;
+                                    let startTranslateX = 0;
+                                    let startTranslateY = 0;
+                                    
+                                    const currentTransform = img.style.transform;
+                                    const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                                    if (translateMatch) {
+                                        startTranslateX = parseFloat(translateMatch[1]);
+                                        startTranslateY = parseFloat(translateMatch[2]);
+                                    }
+                                    
+                                    const handleMouseMove = (e: MouseEvent) => {
+                                        const deltaX = e.clientX - startX;
+                                        const deltaY = e.clientY - startY;
+                                        const scaleMatch = img.style.transform.match(/scale\(([^)]+)\)/);
+                                        const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+                                        img.style.transform = `translate(${startTranslateX + deltaX}px, ${startTranslateY + deltaY}px) scale(${scale})`;
+                                    };
+                                    
+                                    const handleMouseUp = () => {
+                                        container.style.cursor = 'grab';
+                                        document.removeEventListener('mousemove', handleMouseMove);
+                                        document.removeEventListener('mouseup', handleMouseUp);
+                                    };
+                                    
+                                    document.addEventListener('mousemove', handleMouseMove);
+                                    document.addEventListener('mouseup', handleMouseUp);
+                                }}
+                                onDoubleClick={(e) => {
+                                    const img = e.currentTarget.querySelector('img') as HTMLImageElement;
+                                    if (img) {
+                                        img.style.transform = 'translate(0px, 0px) scale(1)';
+                                        img.style.transition = 'transform 0.3s ease-out';
+                                    }
+                                }}
+                            >
+                                <img 
+                                    src="/architecture.png" 
+                                    alt="Container Engine Architecture" 
+                                    className="w-full h-auto user-select-none"
+                                    draggable={false}
+                                    style={{ transform: 'translate(0px, 0px) scale(1)' }}
+                                />
+                                <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-lg px-3 py-2 text-sm text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div className="flex flex-col text-xs">
+                                        <span>🖱️ Scroll to zoom</span>
+                                        <span>🖱️ Drag to pan</span>
+                                        <span>🖱️ Double-click to reset</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="absolute -top-4 -right-4 w-24 h-24 bg-linear-to-r from-green-400 to-blue-500 rounded-full opacity-20 blur-xl"></div>
