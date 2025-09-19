@@ -69,18 +69,23 @@ const NewDeploymentPage: React.FC = () => {
 
       // Verify we have the deployment ID
       if (response.data && response.data.id) {
-        setSuccess(`Deployment '${response.data.app_name}' created successfully! Redirecting...`);
+        setSuccess(`Deployment '${response.data.app_name}' created successfully! Waiting for container to start...`);
         
-        // Small delay to ensure backend has processed the deployment
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Wait longer and check deployment status more thoroughly
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Optional: Poll deployment status before redirecting
+        // Check if deployment and pods are ready before redirecting
         const deploymentReady = await checkDeploymentReady(response.data.id);
         if (deploymentReady) {
+          setSuccess(`Deployment '${response.data.app_name}' is ready! Redirecting...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
           // Navigate to deployment detail page
           navigate(`/deployments/${response.data.id}`);
         } else {
-          setError('Deployment created, but we could not verify its status. Please check manually.');
+          setSuccess(`Deployment '${response.data.app_name}' created successfully! Container may still be starting...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Navigate anyway, LogsPage will handle the loading state
+          navigate(`/deployments/${response.data.id}`);
         }
 
       } else {
@@ -95,18 +100,31 @@ const NewDeploymentPage: React.FC = () => {
     }
   };
 
-  // Optional: Poll deployment status before redirecting
-  const checkDeploymentReady = async (deploymentId: string, maxAttempts = 10) => {
+  // Check if deployment and pods are ready before redirecting
+  const checkDeploymentReady = async (deploymentId: string, maxAttempts = 15) => {
     for (let i = 0; i < maxAttempts; i++) {
       try {
         const statusResponse = await api.get(`/v1/deployments/${deploymentId}`);
         if (statusResponse.data && statusResponse.data.id) {
-          return true;
+          // Additional check: try to see if we can get logs (indicates container is running)
+          try {
+            await api.get(`/v1/deployments/${deploymentId}/logs?tail=1`);
+            console.log(`Attempt ${i + 1}: Deployment is ready with logs available`);
+            return true;
+          } catch (logErr: any) {
+            // If logs fail due to ContainerCreating, keep trying
+            if (logErr?.response?.status === 400) {
+              console.log(`Attempt ${i + 1}: Container still starting...`);
+            } else {
+              console.log(`Attempt ${i + 1}: Deployment ready but logs not available yet`);
+              return true; // Deployment exists, that's good enough
+            }
+          }
         }
       } catch (err) {
         console.log(`Attempt ${i + 1}: Deployment not ready yet`);
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between checks
     }
     return false;
   };

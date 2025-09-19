@@ -1,5 +1,6 @@
 # Kubernetes config files
 k8sConfig.yaml
+k8sConfigLocal.yaml
 *.kubeconfig
 # Rust
 /target/

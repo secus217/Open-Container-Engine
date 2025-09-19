@@ -37,7 +37,7 @@ export default function LogsPage() {
   };
 
   // Load historical logs from API
-  const loadHistoricalLogs = async () => {
+  const loadHistoricalLogs = async (retryCount = 0) => {
     if (!deploymentId) return;
 
     setIsLoadingHistory(true);
@@ -74,6 +74,22 @@ export default function LogsPage() {
         setError('Authentication failed. Please login again.');
       } else if (err?.response?.status === 404) {
         setError('Deployment not found or no logs available.');
+      } else if (err?.response?.status === 400 && err?.response?.data?.message?.includes('ContainerCreating')) {
+        if (retryCount < 10) {
+          setError(`Container is starting up... (Retry ${retryCount + 1}/10)`);
+          setTimeout(() => loadHistoricalLogs(retryCount + 1), 3000);
+          return;
+        } else {
+          setError('Container is taking longer than expected to start. Please refresh manually.');
+        }
+      } else if (err?.response?.status === 400 && err?.response?.data?.message?.includes('waiting to start')) {
+        if (retryCount < 10) {
+          setError(`Container is being created... (Retry ${retryCount + 1}/10)`);
+          setTimeout(() => loadHistoricalLogs(retryCount + 1), 3000);
+          return;
+        } else {
+          setError('Container is taking longer than expected to start. Please refresh manually.');
+        }
       } else {
         setError('Failed to load log history');
       }

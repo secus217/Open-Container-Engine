@@ -34,27 +34,10 @@ api.interceptors.response.use(
   (error) => {
     // Handle network errors
     if (!error.response) {
-      console.error('Network error:', error.message);
-      return Promise.reject(new Error('Network error - please check your connection'));
-    }
-
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      window.location.href = '/auth';
-    }
-    
-    // Handle 403 Forbidden
-    if (error.response?.status === 403) {
-      console.error('Access forbidden');
-    }
-    
-    // Handle 500 Internal Server Error
-    if (error.response?.status === 500) {
-      console.error('Server error occurred');
-    }
-    
+      const errorMessage = 'Network error - please check your connection';
+      alert(errorMessage);
+      return Promise.reject(new Error(errorMessage));
+    }  
     return Promise.reject(error);
   }
 );

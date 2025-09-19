@@ -384,6 +384,7 @@ impl KubernetesService {
         let ingress_name = self.generate_ingress_name(&job.deployment_id);
         let service_name = self.generate_service_name(&job.deployment_id);
         let cluster_domain = self.get_cluster_domain().await?;
+        let ingress_class = self.get_ingress_class().await?;
 
         let deployment_suffix = job
             .deployment_id
@@ -422,7 +423,7 @@ impl KubernetesService {
                 ..Default::default()
             },
             spec: Some(IngressSpec {
-                ingress_class_name: Some("public".to_string()),
+                ingress_class_name: Some(ingress_class),
                 rules: Some(vec![IngressRule {
                     host: Some(host.clone()),
                     http: Some(HTTPIngressRuleValue {
@@ -553,6 +554,63 @@ impl KubernetesService {
         }
     }
 }
+
+    // New method to automatically detect available IngressClass
+    async fn get_ingress_class(&self) -> Result<String, AppError> {
+        use k8s_openapi::api::networking::v1::IngressClass;
+        use kube::api::{Api, ListParams};
+        use std::env;
+
+        info!("🔍 Detecting available IngressClass...");
+
+        // Check if user specified a preference via environment
+        if let Ok(class) = env::var("INGRESS_CLASS") {
+            info!("✅ Using INGRESS_CLASS from environment: {}", class);
+            return Ok(class);
+        }
+
+        // Get all available IngressClasses
+        let ingress_classes: Api<IngressClass> = Api::all(self.client.clone());
+        
+        match ingress_classes.list(&ListParams::default()).await {
+            Ok(classes) => {
+                if classes.items.is_empty() {
+                    warn!("⚠️  No IngressClass found, using default 'nginx'");
+                    return Ok("nginx".to_string());
+                }
+
+                // Priority order for common IngressClass names
+                let preferred_classes = ["nginx", "public", "haproxy", "traefik", "istio"];
+                
+                for preferred in &preferred_classes {
+                    for class in &classes.items {
+                        if let Some(name) = &class.metadata.name {
+                            if name == preferred {
+                                info!("✅ Found preferred IngressClass: {}", name);
+                                return Ok(name.clone());
+                            }
+                        }
+                    }
+                }
+
+                // If no preferred class found, use the first available
+                if let Some(first_class) = classes.items.first() {
+                    if let Some(name) = &first_class.metadata.name {
+                        info!("✅ Using first available IngressClass: {}", name);
+                        return Ok(name.clone());
+                    }
+                }
+
+                warn!("⚠️  IngressClass found but no name, using default 'nginx'");
+                Ok("nginx".to_string())
+            }
+            Err(e) => {
+                warn!("⚠️  Failed to list IngressClasses: {}", e);
+                warn!("   Using default 'nginx' class");
+                Ok("nginx".to_string())
+            }
+        }
+    }
 
 // Add new method to extract IP from kubeconfig
 async fn get_cluster_ip_from_config(&self) -> Result<String, AppError> {
