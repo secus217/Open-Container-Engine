@@ -1,9 +1,11 @@
 // src/pages/DeploymentsPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { useNotifications } from '../context/NotificationContext';
+import type { WebSocketMessage } from '../services/websocket';
 
 interface Deployment {
   id: string;
@@ -23,29 +25,50 @@ const DeploymentsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const deploymentsPerPage = 10;
+  const { addNotificationHandler } = useNotifications();
+
+  const fetchDeployments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/v1/deployments', {
+        params: {
+          page: currentPage,
+          limit: deploymentsPerPage,
+        },
+      });
+      setDeployments(response.data.deployments);
+      setTotalPages(response.data.pagination.total_pages); // Updated to match API response
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to fetch deployments.');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, deploymentsPerPage]);
 
   useEffect(() => {
-    const fetchDeployments = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/v1/deployments', {
-          params: {
-            page: currentPage,
-            limit: deploymentsPerPage,
-          },
-        });
-        setDeployments(response.data.deployments);
-        setTotalPages(response.data.pagination.total_pages); // Updated to match API response
-        setError(null);
-      } catch (err: any) {
-        setError(err.response?.data?.error?.message || 'Failed to fetch deployments.');
-      } finally {
-        setLoading(false);
+    fetchDeployments();
+  }, [fetchDeployments]);
+
+  // Subscribe to WebSocket notifications for deployment changes
+  useEffect(() => {
+    const handleNotification = (message: WebSocketMessage) => {
+      // Auto-refresh deployments when any deployment-related notification arrives
+      if (message.type === 'deployment_status_changed' || 
+          message.type === 'deployment_created' || 
+          message.type === 'deployment_deleted' ||
+          message.type === 'deployment_scaled') {
+        console.log('Received deployment notification, refreshing list...', message);
+        fetchDeployments();
       }
     };
 
-    fetchDeployments();
-  }, [currentPage]);
+    const unsubscribe = addNotificationHandler(handleNotification);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [addNotificationHandler, fetchDeployments]);
 
   const handleDeleteDeployment = async (deploymentId: string) => {
     if (!window.confirm('Are you sure you want to delete this deployment? This action cannot be undone.')) {

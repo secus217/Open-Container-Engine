@@ -10,7 +10,14 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
-    auth::AuthUser, deployment::models::*, error::AppError, handlers::auth::PaginationQuery, services::kubernetes::KubernetesService, AppState, DeploymentJob
+    auth::AuthUser, 
+    deployment::models::*, 
+    error::AppError, 
+    handlers::auth::PaginationQuery, 
+    notifications::NotificationType,
+    services::kubernetes::KubernetesService, 
+    AppState, 
+    DeploymentJob
 };
 
 pub async fn create_deployment(
@@ -101,7 +108,18 @@ pub async fn create_deployment(
 
         return Err(AppError::internal("Failed to queue deployment"));
     }
-    tracing::info!("Deployment system initialized successfully");
+    tracing::info!("Deployment job queued successfully");
+
+    // Send notification about deployment creation
+    state.notification_manager
+        .send_to_user(
+            user.user_id,
+            NotificationType::DeploymentCreated {
+                deployment_id,
+                app_name: payload.app_name.clone(),
+            },
+        )
+        .await;
 
     // For now, we'll just return the response
 

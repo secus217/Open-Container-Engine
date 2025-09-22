@@ -20,10 +20,12 @@ mod deployment;
 mod error;
 mod handlers;
 mod jobs;
+mod notifications;
 mod services;
 mod user;
 
 use crate::jobs::{deployment_job::DeploymentJob, deployment_worker::DeploymentWorker};
+use crate::notifications::NotificationManager;
 use config::Config;
 use database::Database;
 use error::AppError;
@@ -88,16 +90,18 @@ pub struct AppState {
     pub redis: redis::Client,
     pub config: Config,
     pub deployment_sender: mpsc::Sender<DeploymentJob>,
+    pub notification_manager: NotificationManager,
 }
 // Setup function in main.rs
 pub async fn setup_deployment_system(
     db_pool: sqlx::PgPool,
+    notification_manager: NotificationManager,
 ) -> Result<mpsc::Sender<DeploymentJob>, Box<dyn std::error::Error>> {
     // Create channel for deployment jobs
     let (deployment_sender, deployment_receiver) = mpsc::channel::<DeploymentJob>(100);
 
     // Start deployment worker
-    let worker = DeploymentWorker::new(deployment_receiver, db_pool);
+    let worker = DeploymentWorker::new(deployment_receiver, db_pool, notification_manager);
 
     tokio::spawn(async move {
         worker.start().await;
@@ -161,8 +165,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .query_async::<_, String>(&mut redis_conn)
         .await?;
     tracing::info!("Redis connection established");
+    // Setup notification manager
+    let notification_manager = NotificationManager::new();
+
     // Setup deployment system
-    let deployment_sender = setup_deployment_system(db.pool.clone()).await?;
+    let deployment_sender = setup_deployment_system(db.pool.clone(), notification_manager.clone()).await?;
 
     // Create app state
     let state = AppState {
@@ -170,6 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         redis: redis_client,
         config: config.clone(),
         deployment_sender,
+        notification_manager,
     };
 
     // Build our application with routes
@@ -309,6 +317,24 @@ fn create_app(state: AppState) -> Router {
         .route(
             "/v1/deployments/:deployment_id/logs",
             get(handlers::logs::get_logs_handler),
+        )
+        // WebSocket notifications
+        .route(
+            "/v1/ws/notifications",
+            get(notifications::websocket::websocket_handler),
+        )
+        .route(
+            "/v1/ws/health",
+            get(notifications::websocket::websocket_health),
+        )
+        // Notification testing endpoints
+        .route(
+            "/v1/notifications/test",
+            get(handlers::notifications::send_test_notification),
+        )
+        .route(
+            "/v1/notifications/stats",
+            get(handlers::notifications::get_notification_stats),
         )
         // Serve static files
         .fallback_service(serve_dir)

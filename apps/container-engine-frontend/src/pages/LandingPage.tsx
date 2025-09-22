@@ -32,6 +32,12 @@ const LandingPage: React.FC = () => {
 
                         {/* Desktop Navigation */}
                         <div className="hidden lg:flex items-center space-x-6">
+                            <Link to="/features" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                                Features
+                            </Link>
+                            <Link to="/documentation" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                                Docs
+                            </Link>
                             <a href="https://decenter.ai/" target="_blank" rel="noopener noreferrer"
                                 className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 font-medium transition-colors group">
                                 <div className="w-5 h-5 bg-black rounded-sm flex items-center justify-center group-hover:bg-blue-600 transition-colors">
@@ -39,12 +45,7 @@ const LandingPage: React.FC = () => {
                                 </div>
                                 <span>Decenter.AI</span>
                             </a>
-                            <a href="#features" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                                Features
-                            </a>
-                            <a href="#pricing" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                                Pricing
-                            </a>
+                        
                             <Link to="/auth"
                                 className="px-6 py-2.5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl">
                                 Get Started
@@ -76,22 +77,22 @@ const LandingPage: React.FC = () => {
                     {mobileMenuOpen && (
                         <div className="lg:hidden mt-4 pb-4 border-t border-gray-200">
                             <div className="pt-4 space-y-3">
+                                <Link to="/features"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="block text-gray-600 hover:text-blue-600 font-medium transition-colors px-2 py-1">
+                                    Features
+                                </Link>
+                                <Link to="/documentation"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="block text-gray-600 hover:text-blue-600 font-medium transition-colors px-2 py-1">
+                                    Documentation
+                                </Link>
                                 <a href="https://decenter.ai/" target="_blank" rel="noopener noreferrer"
                                     className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 font-medium transition-colors px-2 py-1">
                                     <div className="w-5 h-5 bg-black rounded-sm flex items-center justify-center">
                                         <span className="text-white text-xs font-bold">D</span>
                                     </div>
                                     <span>Decenter.AI</span>
-                                </a>
-                                <a href="#features"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="block text-gray-600 hover:text-blue-600 font-medium transition-colors px-2 py-1">
-                                    Features
-                                </a>
-                                <a href="#pricing"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="block text-gray-600 hover:text-blue-600 font-medium transition-colors px-2 py-1">
-                                    Pricing
                                 </a>
                             </div>
                         </div>
@@ -260,9 +261,9 @@ const LandingPage: React.FC = () => {
                         <div className="text-center">
                             <p className="text-sm sm:text-base text-gray-500">
                                 Not sure which option to choose? 
-                                <a href="#features" className="text-blue-600 hover:text-blue-700 ml-1 font-medium">
-                                    Compare features below ↓
-                                </a>
+                                <Link to="/features" className="text-blue-600 hover:text-blue-700 ml-1 font-medium">
+                                    Compare features →
+                                </Link>
                             </p>
                         </div>
 
@@ -520,12 +521,7 @@ const LandingPage: React.FC = () => {
                                 The open-source alternative to Google Cloud Run
                             </p>
                             <div className="flex space-x-4">
-                                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                                    <span className="sr-only">Twitter</span>
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84" />
-                                    </svg>
-                                </a>
+                            
                                 <a href="https://github.com/AI-Decenter/Open-Container-Engine" className="text-gray-400 hover:text-white transition-colors">
                                     <span className="sr-only">GitHub</span>
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -537,28 +533,23 @@ const LandingPage: React.FC = () => {
                         <div>
                             <h3 className="text-white font-semibold mb-4">Product</h3>
                             <ul className="space-y-2">
-                                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">API Reference</a></li>
+                                <li><Link to="/features" className="hover:text-white transition-colors">Features</Link></li>
+                                <li><Link to="/documentation" className="hover:text-white transition-colors">Documentation</Link></li>
+                                <li><a href="https://github.com/AI-Decenter/Open-Container-Engine" className="hover:text-white transition-colors">GitHub</a></li>
                             </ul>
                         </div>
                         <div>
                             <h3 className="text-white font-semibold mb-4">Company</h3>
                             <ul className="space-y-2">
                                 <li><a href="https://decenter.ai/" className="hover:text-white transition-colors">About</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                                <li><a href="https://decenter.ai/" className="hover:text-white transition-colors">Contact</a></li>
                             </ul>
                         </div>
                         <div>
                             <h3 className="text-white font-semibold mb-4">Support</h3>
                             <ul className="space-y-2">
-                                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Community</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
+                                <li><a href="https://decenter.ai/" className="hover:text-white transition-colors">Help Center</a></li>
+                                <li><a href="https://decenter.ai/" className="hover:text-white transition-colors">Community</a></li>
                             </ul>
                         </div>
                     </div>
@@ -568,9 +559,8 @@ const LandingPage: React.FC = () => {
                                 &copy; {new Date().getFullYear()} Container Engine by Decenter.AI. All rights reserved.
                             </p>
                             <div className="flex space-x-6 mt-4 md:mt-0">
-                                <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
-                                <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</a>
-                                <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Cookies</a>
+                                <Link to="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
+                                <Link to="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</Link>
                             </div>
                         </div>
                     </div>

@@ -118,7 +118,6 @@ export default function LogsPage() {
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
       setIsConnected(true);
       setIsConnecting(false);
       reconnectDelay.current = 1000; // Reset reconnect delay
@@ -149,7 +148,6 @@ export default function LogsPage() {
     };
 
     ws.onclose = (event) => {
-      console.log('WebSocket disconnected', event.code, event.reason);
       setIsConnected(false);
       setIsConnecting(false);
       wsRef.current = null;

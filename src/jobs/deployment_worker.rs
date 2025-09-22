@@ -5,16 +5,22 @@ use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::jobs::deployment_job::DeploymentJob;
+use crate::notifications::{NotificationManager, NotificationType};
 use crate::services::kubernetes::KubernetesService;
 
 pub struct DeploymentWorker {
     receiver: mpsc::Receiver<DeploymentJob>,
     db_pool: PgPool,
+    notification_manager: NotificationManager,
 }
 
 impl DeploymentWorker {
-    pub fn new(receiver: mpsc::Receiver<DeploymentJob>, db_pool: PgPool) -> Self {
-        Self { receiver, db_pool }
+    pub fn new(receiver: mpsc::Receiver<DeploymentJob>, db_pool: PgPool, notification_manager: NotificationManager) -> Self {
+        Self { 
+            receiver, 
+            db_pool, 
+            notification_manager 
+        }
     }
 
     pub async fn start(mut self) {
@@ -71,6 +77,19 @@ impl DeploymentWorker {
             return;
         }
 
+        // Send notification that deployment is being processed
+        self.notification_manager
+            .send_to_user(
+                job.user_id,
+                NotificationType::DeploymentStatusChanged {
+                    deployment_id: job.deployment_id,
+                    status: "deploying".to_string(),
+                    url: None,
+                    error_message: None,
+                },
+            )
+            .await;
+
         // Deploy to Kubernetes
         match k8s_service.deploy_application(&job).await {
             Ok(_) => {
@@ -97,9 +116,22 @@ impl DeploymentWorker {
                             error!("Failed to update deployment status to running: {}", e);
                         } else {
                             info!("Deployment {} completed successfully", job.deployment_id);
-                            if let Some(url) = ingress_url {
+                            if let Some(url) = &ingress_url {
                                 info!("Application accessible at: {}", url);
                             }
+
+                            // Send success notification
+                            self.notification_manager
+                                .send_to_user(
+                                    job.user_id,
+                                    NotificationType::DeploymentStatusChanged {
+                                        deployment_id: job.deployment_id,
+                                        status: "running".to_string(),
+                                        url: ingress_url.clone(),
+                                        error_message: None,
+                                    },
+                                )
+                                .await;
                         }
                     }
                     Err(e) => {
@@ -115,6 +147,19 @@ impl DeploymentWorker {
                         .await
                         {
                             error!("Failed to update deployment status: {}", e);
+                        } else {
+                            // Send partial success notification
+                            self.notification_manager
+                                .send_to_user(
+                                    job.user_id,
+                                    NotificationType::DeploymentStatusChanged {
+                                        deployment_id: job.deployment_id,
+                                        status: "running".to_string(),
+                                        url: None,
+                                        error_message: Some("Deployment successful but URL not ready yet".to_string()),
+                                    },
+                                )
+                                .await;
                         }
                     }
                 }
@@ -138,6 +183,19 @@ impl DeploymentWorker {
                 .await
                 {
                     error!("Failed to update deployment status to failed: {}", db_err);
+                } else {
+                    // Send failure notification
+                    self.notification_manager
+                        .send_to_user(
+                            job.user_id,
+                            NotificationType::DeploymentStatusChanged {
+                                deployment_id: job.deployment_id,
+                                status: "failed".to_string(),
+                                url: None,
+                                error_message: Some(e.to_string()),
+                            },
+                        )
+                        .await;
                 }
             }
         }
