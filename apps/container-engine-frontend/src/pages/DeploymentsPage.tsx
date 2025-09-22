@@ -149,14 +149,44 @@ const DeploymentsPage: React.FC = () => {
 
         {!loading && deployments.length === 0 && !error && (
           <div className="bg-white shadow-lg rounded-lg p-6 sm:p-8 text-center">
-            <p className="text-lg sm:text-xl text-gray-700 mb-4">No deployments found.</p>
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 mb-4">
+              <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14-4H3m16 8H7m12 4H9" />
+              </svg>
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No deployments found</h3>
             <p className="text-sm sm:text-base text-gray-500 mb-6">It looks like you haven't deployed anything yet. Get started by creating your first deployment!</p>
-            <Link
-              to="/deployments/new"
-              className="inline-flex items-center px-4 sm:px-5 py-2 border border-transparent text-sm sm:text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Create New Deployment
-            </Link>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <Link
+                to="/deployments/new?try=helloworld"
+                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 border border-transparent text-sm sm:text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200"
+              >
+                <svg className="-ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Try Demo Deployment
+              </Link>
+              
+              <span className="text-gray-400 hidden sm:inline">or</span>
+              <span className="text-gray-400 sm:hidden">or</span>
+              
+              <Link
+                to="/deployments/new"
+                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 text-sm sm:text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200"
+              >
+                <svg className="-ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Create Custom Deployment
+              </Link>
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <p className="text-xs sm:text-sm text-blue-700">
+                💡 <strong>Pro tip:</strong> The Demo Deployment will automatically create a sample deployment with a simple web server that you can access immediately!
+              </p>
+            </div>
           </div>
         )}
 

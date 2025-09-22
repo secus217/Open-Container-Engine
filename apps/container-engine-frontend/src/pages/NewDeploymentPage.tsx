@@ -1,8 +1,8 @@
 // src/pages/NewDeploymentPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api/api';
 import DashboardLayout from '../components/Layout/DashboardLayout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   RocketLaunchIcon,
   CubeIcon,
@@ -19,6 +19,7 @@ import {
 
 const NewDeploymentPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [app_name, setapp_name] = useState('');
   const [image, setImage] = useState('');
   const [port, setPort] = useState(80);
@@ -27,6 +28,20 @@ const NewDeploymentPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isHelloWorldDemo, setIsHelloWorldDemo] = useState(false);
+
+  // Check for Demo Deployment parameter and auto-fill form
+  useEffect(() => {
+    const tryParam = searchParams.get('try');
+    if (tryParam === 'helloworld') {
+      setIsHelloWorldDemo(true);
+      setapp_name('demo-deployment');
+      setImage('nginxdemos/hello:latest');
+      setPort(80);
+      setReplicas(1);
+      setEnvVars([{ key: '', value: '' }]);
+    }
+  }, [searchParams]);
 
   const handleEnvVarChange = (index: number, field: 'key' | 'value', value: string) => {
     const newEnvVars = [...envVars];
@@ -69,7 +84,11 @@ const NewDeploymentPage: React.FC = () => {
 
       // Verify we have the deployment ID
       if (response.data && response.data.id) {
-        setSuccess(`Deployment '${response.data.app_name}' created successfully! Waiting for container to start...`);
+        if (isHelloWorldDemo) {
+          setSuccess(`🎉 Demo deployment created successfully! Your demo app is starting up...`);
+        } else {
+          setSuccess(`Deployment '${response.data.app_name}' created successfully! Waiting for container to start...`);
+        }
         
         // Wait longer and check deployment status more thoroughly
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -77,12 +96,20 @@ const NewDeploymentPage: React.FC = () => {
         // Check if deployment and pods are ready before redirecting
         const deploymentReady = await checkDeploymentReady(response.data.id);
         if (deploymentReady) {
-          setSuccess(`Deployment '${response.data.app_name}' is ready! Redirecting...`);
+          if (isHelloWorldDemo) {
+            setSuccess(`🚀 Demo deployment is ready! Redirecting to your new app...`);
+          } else {
+            setSuccess(`Deployment '${response.data.app_name}' is ready! Redirecting...`);
+          }
           await new Promise(resolve => setTimeout(resolve, 1000));
           // Navigate to deployment detail page
           navigate(`/deployments/${response.data.id}`);
         } else {
-          setSuccess(`Deployment '${response.data.app_name}' created successfully! Container may still be starting...`);
+          if (isHelloWorldDemo) {
+            setSuccess(`Demo deployment created successfully! The container may still be starting...`);
+          } else {
+            setSuccess(`Deployment '${response.data.app_name}' created successfully! Container may still be starting...`);
+          }
           await new Promise(resolve => setTimeout(resolve, 2000));
           // Navigate anyway, LogsPage will handle the loading state
           navigate(`/deployments/${response.data.id}`);
@@ -183,6 +210,23 @@ const NewDeploymentPage: React.FC = () => {
         <div className="p-8">
           {/* Header Section */}
           <div className="mb-8">
+            {/* Demo Deployment Banner */}
+            {isHelloWorldDemo && (
+              <div className="mb-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
+                    <RocketLaunchIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-1">🎉 Demo Deployment Mode</h3>
+                    <p className="text-green-100">
+                      We've pre-filled the form with a sample demo application. Click "Deploy Application" to see it in action!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -270,7 +314,16 @@ const NewDeploymentPage: React.FC = () => {
                       />
                       <CubeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     </div>
-                    <p className="text-xs text-gray-500">Docker image from Docker Hub or your private registry</p>
+                    {isHelloWorldDemo ? (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-700 flex items-center">
+                          <CheckCircleIcon className="h-4 w-4 mr-2 text-green-500" />
+                          <strong>Demo Image:</strong> This is a lightweight NGINX container that displays a simple demo page with system information.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">Docker image from Docker Hub or your private registry</p>
+                    )}
                   </div>
                 </div>
 

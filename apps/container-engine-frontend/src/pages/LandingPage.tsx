@@ -21,8 +21,8 @@ const LandingPage: React.FC = () => {
                 <nav className="container mx-auto px-4 sm:px-6 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-sm sm:text-lg">CE</span>
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center">
+                                <img src="/open-container-engine-logo.png" alt="Open Container Engine" className="w-full h-full object-contain rounded-md" />
                             </div>
                             <span className="text-lg sm:text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                                 <span className="hidden sm:inline">Container Engine</span>
@@ -511,8 +511,8 @@ const LandingPage: React.FC = () => {
                     <div className="grid md:grid-cols-4 gap-8 mb-8">
                         <div>
                             <div className="flex items-center space-x-3 mb-4">
-                                <div className="w-8 h-8 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold">CE</span>
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                                    <img src="/open-container-engine-logo.png" alt="Open Container Engine" className="w-full h-full object-contain" />
                                 </div>
                                 <span className="text-xl font-bold text-white">Container Engine</span>
                             </div>
