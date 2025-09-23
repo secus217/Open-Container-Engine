@@ -112,7 +112,7 @@ impl KubernetesService {
 
         let namespace = Self::generate_deployment_namespace_static(deployment_id);
 
-        let mut service = Self {
+        let service = Self {
             client,
             namespace: namespace.clone(),
         };

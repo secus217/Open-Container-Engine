@@ -185,13 +185,13 @@ const DocumentationPage: React.FC = () => {
                       <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-3 lg:mb-4">User Registration</h3>
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-6 relative">
                         <button
-                          onClick={() => copyToClipboard(`curl -X POST https://api.container-engine.app/v1/auth/register \\
+                          onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "username": "your_username",
     "email": "your@email.com",
     "password": "secure_password",
-    "confirmPassword": "secure_password"
+    "confirm_password": "secure_password"
   }'`, 'register')}
                           className="absolute top-2 right-2 lg:top-4 lg:right-4 p-1.5 lg:p-2 text-gray-400 hover:text-white transition-colors"
                         >
@@ -202,13 +202,13 @@ const DocumentationPage: React.FC = () => {
                           )}
                         </button>
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`curl -X POST https://api.container-engine.app/v1/auth/register \\
+{`curl -X POST https://decenter.run/v1/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "username": "your_username",
     "email": "your@email.com",
     "password": "secure_password",
-    "confirmPassword": "secure_password"
+    "confirm_password": "secure_password"
   }'`}
                         </pre>
                       </div>
@@ -218,7 +218,7 @@ const DocumentationPage: React.FC = () => {
                       <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-3 lg:mb-4">API Key Generation</h3>
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-6 relative">
                         <button
-                          onClick={() => copyToClipboard(`curl -X POST https://api.container-engine.app/v1/api-keys \\
+                          onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/api-keys \\
   -H "Authorization: Bearer <access-token>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -234,7 +234,7 @@ const DocumentationPage: React.FC = () => {
                           )}
                         </button>
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`curl -X POST https://api.container-engine.app/v1/api-keys \\
+{`curl -X POST https://decenter.run/v1/api-keys \\
   -H "Authorization: Bearer <access-token>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -258,7 +258,7 @@ const DocumentationPage: React.FC = () => {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
                       <h3 className="text-base lg:text-lg font-semibold text-blue-900 mb-2">Base URL</h3>
                       <code className="text-blue-800 bg-blue-100 px-2 lg:px-3 py-1 rounded text-xs lg:text-sm break-all">
-                        https://api.container-engine.app
+                        https://decenter.run/
                       </code>
                     </div>
 
@@ -314,14 +314,14 @@ const DocumentationPage: React.FC = () => {
                     <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-3 lg:mb-4">Deploy Your First Container</h3>
                     <div className="bg-gray-900 rounded-lg p-3 lg:p-6 relative">
                       <button
-                        onClick={() => copyToClipboard(`curl -X POST https://api.container-engine.app/v1/deployments \\
+                        onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/deployments \\
   -H "Authorization: Bearer <your-api-key>" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "appName": "hello-world",
+    "app_name": "hello-world",
     "image": "nginx:latest",
     "port": 80,
-    "envVars": {
+    "env_vars": {
       "ENVIRONMENT": "production"
     },
     "replicas": 1
@@ -335,14 +335,14 @@ const DocumentationPage: React.FC = () => {
                         )}
                       </button>
                       <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`curl -X POST https://api.container-engine.app/v1/deployments \\
+{`curl -X POST https://decenter.run/v1/deployments \\
   -H "Authorization: Bearer <your-api-key>" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "appName": "hello-world",
+    "app_name": "hello-world",
     "image": "nginx:latest",
     "port": 80,
-    "envVars": {
+    "env_vars": {
       "ENVIRONMENT": "production"
     },
     "replicas": 1
@@ -355,9 +355,9 @@ const DocumentationPage: React.FC = () => {
                       <pre className="text-green-800 text-xs lg:text-sm overflow-x-auto">
 {`{
   "id": "dpl-a1b2c3d4e5",
-  "appName": "hello-world",
+  "app_name": "hello-world",
   "status": "pending",
-  "url": "https://hello-world.container-engine.app",
+  "url": "https://hello-world.vinhomes.co.uk",
   "message": "Deployment is being processed"
 }`}
                       </pre>
@@ -379,10 +379,10 @@ const DocumentationPage: React.FC = () => {
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
 {`# Deploy a Python Flask app
 {
-  "appName": "my-python-app",
+  "app_name": "my-python-app",
   "image": "python:3.9-slim",
   "port": 5000,
-  "envVars": {
+  "env_vars": {
     "FLASK_ENV": "production",
     "DATABASE_URL": "postgresql://..."
   }
@@ -397,10 +397,10 @@ const DocumentationPage: React.FC = () => {
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
 {`# Deploy a Node.js Express app
 {
-  "appName": "my-node-app",
+  "app_name": "my-node-app",
   "image": "node:16-alpine",
   "port": 3000,
-  "envVars": {
+  "env_vars": {
     "NODE_ENV": "production",
     "API_KEY": "your-api-key"
   },
@@ -441,12 +441,12 @@ const DocumentationPage: React.FC = () => {
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
 {`{
-  "healthCheck": {
+  "health_check": {
     "path": "/health",
-    "initialDelaySeconds": 30,
-    "periodSeconds": 10,
-    "timeoutSeconds": 5,
-    "failureThreshold": 3
+    "initial_delay_seconds": 30,
+    "period_seconds": 10,
+    "timeout_seconds": 5,
+    "failure_threshold": 3
   }
 }`}
                         </pre>
