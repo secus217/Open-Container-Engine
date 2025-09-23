@@ -37,7 +37,7 @@ export default function WebhooksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null);
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
-
+    
   // Create/Edit form state
   const [formData, setFormData] = useState<CreateWebhookRequest>({
     name: '',
@@ -77,9 +77,9 @@ export default function WebhooksPage() {
       } else {
         setError(err?.response?.data?.message || err.message || 'Failed to create webhook');
       }
+      setShowCreateModal(false); // Always close modal on error
     }
   };
-
   const handleUpdateWebhook = async () => {
     if (!editingWebhook) return;
     setValidationErrors({});
@@ -89,11 +89,20 @@ export default function WebhooksPage() {
       setEditingWebhook(null);
       resetForm();
     } catch (err: any) {
-      if (err?.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
+      const errors = err?.response?.data?.errors || err?.response?.data?.error || {};
+      if (typeof errors === 'object' && Object.keys(errors).length > 0) {
+        // Show all validation errors as a single string in the global error alert
+        setError(Object.values(errors).join(' | '));
       } else {
-        setError(err?.response?.data?.message || err.message || 'Failed to update webhook');
+        setError(
+          err?.response?.data?.message ||
+          err?.response?.data?.error?.message ||
+          err.message ||
+          'Failed to update webhook'
+        );
       }
+      setEditingWebhook(null); // Always close modal on error
+      setValidationErrors({}); // Clear modal field errors
     }
   };
 
@@ -177,19 +186,19 @@ export default function WebhooksPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div className="max-w-6xl mx-auto px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 w-full">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Webhooks</h1>
-            <p className="mt-2 text-gray-600">Manage your deployment notification webhooks</p>
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-3 sm:gap-0">
+          <div className="w-full sm:w-auto">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Webhooks</h1>
+            <p className="mt-1 sm:mt-2 text-gray-600 text-sm sm:text-base">Manage your deployment notification webhooks</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-2 sm:px-4 py-1.5 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 max-w-[200px] min-w-0 flex-wrap truncate"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Webhook
+            <Plus className="h-4 w-4 mr-1 flex-shrink-0" />
+            <span className="truncate">Create Webhook</span>
           </button>
         </div>
 
@@ -212,7 +221,7 @@ export default function WebhooksPage() {
         )}
 
         {/* Webhooks List */}
-        <div className="bg-white shadow rounded-lg">
+  <div className="bg-white shadow rounded-lg overflow-x-auto w-full">
           {webhooks.length === 0 ? (
             <div className="text-center py-12">
               <Globe className="mx-auto h-12 w-12 text-gray-400" />
@@ -229,25 +238,25 @@ export default function WebhooksPage() {
               </div>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <ul className="divide-y divide-gray-200 min-w-[250px] sm:min-w-0">
               {webhooks.map((webhook) => (
-                <li key={webhook.id} className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
+                <li key={webhook.id} className="p-3 sm:p-4 text-xs sm:text-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start sm:items-center flex-col sm:flex-row">
                         <div className="flex-shrink-0">
                           {webhook.is_active ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                           ) : (
-                            <XCircle className="h-5 w-5 text-red-500" />
+                            <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
                           )}
                         </div>
-                        <div className="ml-4 flex-1">
-                          <div className="flex items-center">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">
+                        <div className="ml-0 sm:ml-4 flex-1 min-w-0 mt-1 sm:mt-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center">
+                            <h3 className="font-medium text-gray-900 truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs md:max-w-md lg:max-w-lg xl:max-w-2xl">
                               {webhook.name}
                             </h3>
-                            <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                            <span className={`mt-1 sm:mt-0 sm:ml-2 px-2 py-1 text-xs rounded-full ${
                               webhook.is_active 
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-red-100 text-red-800'
@@ -256,38 +265,38 @@ export default function WebhooksPage() {
                             </span>
                           </div>
                           <div className="mt-1">
-                            <p className="text-sm text-gray-600 truncate">
+                            <p className="break-all max-w-full whitespace-pre-line text-xs sm:text-sm" style={{wordBreak: 'break-all'}}>
                               {webhook.url}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-xs sm:text-sm text-gray-500">
                               Events: {webhook.events.map(getEventLabel).join(', ')}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
                               Created: {new Date(webhook.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-row flex-wrap items-center gap-1 sm:gap-2 mt-2 sm:mt-0 sm:ml-4">
                       <button
                         onClick={() => handleTestWebhook(webhook.id)}
                         disabled={testingWebhook === webhook.id}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="inline-flex items-center px-2 sm:px-3 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                       >
                         <TestTube className="h-3 w-3 mr-1" />
                         {testingWebhook === webhook.id ? 'Testing...' : 'Test'}
                       </button>
                       <button
                         onClick={() => openEditModal(webhook)}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center px-2 sm:px-3 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                       >
                         <Edit className="h-3 w-3 mr-1" />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteWebhook(webhook.id)}
-                        className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50"
+                        className="inline-flex items-center px-2 sm:px-3 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50"
                       >
                         <Trash2 className="h-3 w-3 mr-1" />
                         Delete
@@ -302,15 +311,14 @@ export default function WebhooksPage() {
 
         {/* Create/Edit Modal */}
         {(showCreateModal || editingWebhook) && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-2 xs:p-3 sm:p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-xs xs:max-w-sm sm:max-w-md">
+              <div className="px-3 xs:px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">
                   {editingWebhook ? 'Edit Webhook' : 'Create Webhook'}
                 </h3>
               </div>
-              
-              <div className="px-6 py-4 space-y-4">
+              <div className="px-3 xs:px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
                 {/* Name Input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

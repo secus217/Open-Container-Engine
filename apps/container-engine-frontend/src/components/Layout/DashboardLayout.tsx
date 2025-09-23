@@ -160,7 +160,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
           </div>
 
           {/* Logout Button */}
-          <div className="p-4 border-t border-slate-700/50">
+          <div className="p-4 border-t border-slate-700/50 mb-12">
             <button
               onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200 group"
