@@ -1,7 +1,7 @@
 // src/pages/DocumentationPage.tsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
+import {
   BookOpenIcon,
   RocketLaunchIcon,
   CodeBracketIcon,
@@ -69,7 +69,7 @@ const DocumentationPage: React.FC = () => {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
-                <img src="/open-container-engine-logo.png" alt="Open Container Engine" className="rounded-md w-4 h-4 sm:w-6 sm:h-6 object-contain filter drop-shadow-sm" />
+              <img src="/open-container-engine-logo.png" alt="Open Container Engine" className="rounded-md w-4 h-4 sm:w-6 sm:h-6 object-contain filter drop-shadow-sm" />
               <span className="text-lg sm:text-xl font-bold text-gray-900">Container Engine</span>
             </Link>
             <div className="hidden sm:flex items-center space-x-4 lg:space-x-6">
@@ -136,7 +136,7 @@ const DocumentationPage: React.FC = () => {
                     <RocketLaunchIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
                     <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">Getting Started</h2>
                   </div>
-                  
+
                   <div className="prose max-w-none">
                     <p className="text-base lg:text-lg text-gray-600 mb-4 lg:mb-6">
                       Welcome to Container Engine! This guide will help you deploy your first containerized application in under 60 seconds.
@@ -202,7 +202,7 @@ const DocumentationPage: React.FC = () => {
                           )}
                         </button>
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`curl -X POST https://decenter.run/v1/auth/register \\
+                          {`curl -X POST https://decenter.run/v1/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "username": "your_username",
@@ -234,7 +234,7 @@ const DocumentationPage: React.FC = () => {
                           )}
                         </button>
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`curl -X POST https://decenter.run/v1/api-keys \\
+                          {`curl -X POST https://decenter.run/v1/api-keys \\
   -H "Authorization: Bearer <access-token>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -263,31 +263,52 @@ const DocumentationPage: React.FC = () => {
                     </div>
 
                     <div className="grid sm:grid-cols-2 gap-3 lg:gap-6">
-                      {[
-                        {
-                          method: 'POST',
-                          endpoint: '/v1/deployments',
-                          description: 'Create a new deployment',
-                          color: 'green'
-                        },
-                        {
-                          method: 'GET',
-                          endpoint: '/v1/deployments',
-                          description: 'List all deployments',
-                          color: 'blue'
-                        },
-                        {
-                          method: 'GET',
-                          endpoint: '/v1/deployments/{id}',
-                          description: 'Get deployment details',
-                          color: 'blue'
-                        },
-                        {
-                          method: 'DELETE',
-                          endpoint: '/v1/deployments/{id}',
-                          description: 'Delete a deployment',
-                          color: 'red'
-                        }
+                      {[ 
+                        // Authentication
+                        { method: 'POST', endpoint: '/v1/auth/register', description: 'Register a new user', color: 'green' },
+                        { method: 'POST', endpoint: '/v1/auth/login', description: 'Login and get access token', color: 'blue' },
+                        { method: 'POST', endpoint: '/v1/auth/refresh', description: 'Refresh access token', color: 'blue' },
+                        { method: 'POST', endpoint: '/v1/auth/logout', description: 'Logout user', color: 'red' },
+                        { method: 'POST', endpoint: '/v1/auth/forgot-password', description: 'Request password reset', color: 'yellow' },
+                        { method: 'POST', endpoint: '/v1/auth/reset-password', description: 'Reset password', color: 'yellow' },
+                        // API Keys
+                        { method: 'GET', endpoint: '/v1/api-keys', description: 'List API keys', color: 'blue' },
+                        { method: 'POST', endpoint: '/v1/api-keys', description: 'Create a new API key', color: 'green' },
+                        { method: 'DELETE', endpoint: '/v1/api-keys/{key_id}', description: 'Revoke an API key', color: 'red' },
+                        // User Profile
+                        { method: 'GET', endpoint: '/v1/user/profile', description: 'Get user profile', color: 'blue' },
+                        { method: 'PUT', endpoint: '/v1/user/profile', description: 'Update user profile', color: 'yellow' },
+                        { method: 'PUT', endpoint: '/v1/user/password', description: 'Change user password', color: 'yellow' },
+                        // Deployments
+                        { method: 'GET', endpoint: '/v1/deployments', description: 'List all deployments', color: 'blue' },
+                        { method: 'POST', endpoint: '/v1/deployments', description: 'Create a new deployment', color: 'green' },
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}', description: 'Get deployment details', color: 'blue' },
+                        { method: 'PUT', endpoint: '/v1/deployments/{deployment_id}', description: 'Update deployment', color: 'yellow' },
+                        { method: 'DELETE', endpoint: '/v1/deployments/{deployment_id}', description: 'Delete deployment', color: 'red' },
+                        { method: 'PATCH', endpoint: '/v1/deployments/{deployment_id}/scale', description: 'Scale deployment', color: 'yellow' },
+                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/start', description: 'Start deployment', color: 'green' },
+                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/stop', description: 'Stop deployment', color: 'red' },
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/metrics', description: 'Get deployment metrics', color: 'blue' },
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/status', description: 'Get deployment status', color: 'blue' },
+                        // Domains
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/domains', description: 'List domains for deployment', color: 'blue' },
+                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/domains', description: 'Add domain to deployment', color: 'green' },
+                        { method: 'DELETE', endpoint: '/v1/deployments/{deployment_id}/domains/{domain_id}', description: 'Remove domain from deployment', color: 'red' },
+                        // Logs
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/logs', description: 'Get deployment logs', color: 'blue' },
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/logs/stream', description: 'Stream deployment logs (WebSocket)', color: 'blue' },
+                        // Notifications
+                        { method: 'GET', endpoint: '/v1/ws/notifications', description: 'WebSocket notifications', color: 'blue' },
+                        { method: 'GET', endpoint: '/v1/ws/health', description: 'WebSocket health check', color: 'blue' },
+                        { method: 'GET', endpoint: '/v1/notifications/stats', description: 'Get notification stats', color: 'blue' },
+                        // Webhooks
+                        { method: 'GET', endpoint: '/v1/webhooks', description: 'List webhooks', color: 'blue' },
+                        { method: 'POST', endpoint: '/v1/webhooks', description: 'Create webhook', color: 'green' },
+                        { method: 'GET', endpoint: '/v1/webhooks/{webhook_id}', description: 'Get webhook details', color: 'blue' },
+                        { method: 'PUT', endpoint: '/v1/webhooks/{webhook_id}', description: 'Update webhook', color: 'yellow' },
+                        { method: 'DELETE', endpoint: '/v1/webhooks/{webhook_id}', description: 'Delete webhook', color: 'red' },
+                        // Health
+                        { method: 'GET', endpoint: '/health', description: 'Health check endpoint', color: 'blue' },
                       ].map((api, index) => (
                         <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 lg:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center mb-2 space-y-1 sm:space-y-0">
@@ -335,7 +356,7 @@ const DocumentationPage: React.FC = () => {
                         )}
                       </button>
                       <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`curl -X POST https://decenter.run/v1/deployments \\
+                        {`curl -X POST https://decenter.run/v1/deployments \\
   -H "Authorization: Bearer <your-api-key>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -353,7 +374,7 @@ const DocumentationPage: React.FC = () => {
                     <div className="mt-4 lg:mt-6 p-4 lg:p-6 bg-green-50 border border-green-200 rounded-lg">
                       <h4 className="text-base lg:text-lg font-semibold text-green-900 mb-2">Success Response</h4>
                       <pre className="text-green-800 text-xs lg:text-sm overflow-x-auto">
-{`{
+                        {`{
   "id": "dpl-a1b2c3d4e5",
   "app_name": "hello-world",
   "status": "pending",
@@ -377,7 +398,7 @@ const DocumentationPage: React.FC = () => {
                       <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Python Application</h3>
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`# Deploy a Python Flask app
+                          {`# Deploy a Python Flask app
 {
   "app_name": "my-python-app",
   "image": "python:3.9-slim",
@@ -395,7 +416,7 @@ const DocumentationPage: React.FC = () => {
                       <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Node.js Application</h3>
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`# Deploy a Node.js Express app
+                          {`# Deploy a Node.js Express app
 {
   "app_name": "my-node-app",
   "image": "node:16-alpine",
@@ -440,7 +461,7 @@ const DocumentationPage: React.FC = () => {
                       </p>
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`{
+                          {`{
   "health_check": {
     "path": "/health",
     "initial_delay_seconds": 30,
@@ -460,7 +481,7 @@ const DocumentationPage: React.FC = () => {
                       </p>
                       <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
                         <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-{`{
+                          {`{
   "resources": {
     "cpu": "500m",      // 0.5 CPU cores
     "memory": "512Mi"   // 512 MB RAM
@@ -482,7 +503,7 @@ const DocumentationPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 lg:space-x-3 mb-3 lg:mb-4">
-              <div className="w-6 h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
+              <div className="w-6 h-6 lg:w-8 lg:h-8  rounded-xl flex items-center justify-center">
                 <img src="/open-container-engine-logo.png" alt="Open Container Engine" className="w-4 h-4 lg:w-6 lg:h-6 object-contain filter drop-shadow-sm" />
               </div>
               <span className="text-lg lg:text-xl font-bold text-white">Container Engine</span>

@@ -389,6 +389,12 @@ fn create_app(state: AppState) -> Router {
             "/v1/deployments/:deployment_id/logs",
             get(handlers::logs::get_logs_handler),
         )
+         .route(
+            "/v1/deployments/:deployment_id/pods",
+            get(handlers::logs::get_deployment_pods),
+        )
+        .route("/v1/deployments/:deployment_id/pods/:pod_name/logs", get(handlers::logs::get_pod_logs))
+        .route("/v1/deployments/:deployment_id/pods/:pod_name/logs/ws", get(handlers::logs::ws_pod_logs_handler))
         // WebSocket notifications
         .route(
             "/v1/ws/notifications",
