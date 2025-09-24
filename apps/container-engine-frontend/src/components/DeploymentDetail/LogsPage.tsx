@@ -105,7 +105,6 @@ export default function LogsPage() {
     }
 
     const token = getAuthToken();
-
     if (!token) {
       setError('Authentication required. Please login again.');
       return;
@@ -115,16 +114,18 @@ export default function LogsPage() {
     setError(null);
 
     // Add token to WebSocket URL as query parameter
-    const wsUrl = `ws://localhost:3000/v1/deployments/${deploymentId}/logs/stream?tail=50&token=${encodeURIComponent('Bearer ' + token)}`;
+    const wsUrl = `ws://${window.location.host}/v1/deployments/${deploymentId}/logs/stream?tail=50&token=${encodeURIComponent('Bearer ' + token)}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      console.log('WebSocket connected');
       setIsConnected(true);
       setIsConnecting(false);
       reconnectDelay.current = 1000; // Reset reconnect delay
     };
 
     ws.onmessage = (event) => {
+      console.log('WebSocket message received:', event);
       // Skip connection confirmation messages
       if (event.data === 'Connected to log stream' ||
         event.data === 'Log stream ended' ||
@@ -149,6 +150,7 @@ export default function LogsPage() {
     };
 
     ws.onclose = (event) => {
+      console.log('WebSocket disconnected', event.code, event.reason);
       setIsConnected(false);
       setIsConnecting(false);
       wsRef.current = null;
