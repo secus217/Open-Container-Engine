@@ -51,7 +51,8 @@ class WebSocketService {
     try {
       this.isConnecting = true;
       // Backend WebSocket URL - backend runs on port 3000
-      const wsUrl = `ws://localhost:3000/v1/ws/notifications?token=${encodeURIComponent(token)}`;
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/v1/ws/notifications?token=${encodeURIComponent(token)}`;
       console.log('Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl);
 
