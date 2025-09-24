@@ -105,6 +105,7 @@ export default function LogsPage() {
     }
 
     const token = getAuthToken();
+
     if (!token) {
       setError('Authentication required. Please login again.');
       return;

@@ -13,9 +13,10 @@ use std::sync::Arc;
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::{AppError, AppState};
-use crate::auth::{AuthUser, jwt::JwtManager}; 
+use crate::auth::middleware::verify_api_key;
+use crate::auth::{jwt::JwtManager, AuthUser};
 use crate::services::kubernetes::KubernetesService;
+use crate::{AppError, AppState};
 
 #[derive(Deserialize)]
 pub struct LogsQuery {
@@ -40,8 +41,6 @@ pub async fn ws_logs_handler(
     ws.on_upgrade(move |socket| handle_socket(socket, state, deployment_id, query))
 }
 
-
-
 async fn handle_socket(
     socket: WebSocket,
     state: Arc<AppState>,
@@ -50,7 +49,7 @@ async fn handle_socket(
 ) {
     // Extract token before using query elsewhere
     let token = query.token.clone();
-    
+
     // Authenticate user via token first, before splitting the socket
     let user_id = match authenticate_websocket_user(&state, token).await {
         Ok(user_id) => user_id,
@@ -87,7 +86,9 @@ async fn handle_socket_with_user_internal(
         Ok(false) => {
             error!("User {} does not own deployment {}", user_id, deployment_id);
             let _ = sender
-                .send(Message::Text("Error: Deployment not found or access denied".to_string()))
+                .send(Message::Text(
+                    "Error: Deployment not found or access denied".to_string(),
+                ))
                 .await;
             let _ = sender.send(Message::Close(None)).await;
             return;
@@ -95,7 +96,9 @@ async fn handle_socket_with_user_internal(
         Err(e) => {
             error!("Failed to verify deployment ownership: {}", e);
             let _ = sender
-                .send(Message::Text("Error: Failed to verify deployment access".to_string()))
+                .send(Message::Text(
+                    "Error: Failed to verify deployment access".to_string(),
+                ))
                 .await;
             let _ = sender.send(Message::Close(None)).await;
             return;
@@ -106,9 +109,15 @@ async fn handle_socket_with_user_internal(
     let k8s_service = match KubernetesService::for_deployment(&deployment_id, &user_id).await {
         Ok(service) => service,
         Err(e) => {
-            error!("Failed to create K8s service for deployment {} (user {}): {}", deployment_id, user_id, e);
+            error!(
+                "Failed to create K8s service for deployment {} (user {}): {}",
+                deployment_id, user_id, e
+            );
             let _ = sender
-                .send(Message::Text(format!("Error: Failed to connect to Kubernetes: {}", e)))
+                .send(Message::Text(format!(
+                    "Error: Failed to connect to Kubernetes: {}",
+                    e
+                )))
                 .await;
             let _ = sender.send(Message::Close(None)).await;
             return;
@@ -116,9 +125,15 @@ async fn handle_socket_with_user_internal(
     };
 
     // Start streaming logs
-    match k8s_service.stream_logs_realtime(&deployment_id, query.tail).await {
+    match k8s_service
+        .stream_logs_realtime(&deployment_id, query.tail)
+        .await
+    {
         Ok(mut log_stream) => {
-            info!("Started log stream for deployment: {} (user: {})", deployment_id, user_id);
+            info!(
+                "Started log stream for deployment: {} (user: {})",
+                deployment_id, user_id
+            );
 
             // Send initial logs from stream
             let mut line_count = 0;
@@ -142,12 +157,15 @@ async fn handle_socket_with_user_internal(
 
             // If we have logs, keep connection open for potential new logs
             if line_count > 0 {
-                let _ = sender.send(Message::Text("--- End of current logs ---".to_string())).await;
-                
+                let _ = sender
+                    .send(Message::Text("--- End of current logs ---".to_string()))
+                    .await;
+
                 // Keep WebSocket connection alive for potential future logs
                 // This is a simple keepalive mechanism
                 let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(30));
-                for _ in 0..10 { // Keep alive for 5 minutes
+                for _ in 0..10 {
+                    // Keep alive for 5 minutes
                     interval.tick().await;
                     if sender.send(Message::Ping(vec![])).await.is_err() {
                         break;
@@ -156,7 +174,9 @@ async fn handle_socket_with_user_internal(
             }
 
             // Cleanup
-            let _ = sender.send(Message::Text("Log stream ended".to_string())).await;
+            let _ = sender
+                .send(Message::Text("Log stream ended".to_string()))
+                .await;
             let _ = sender.send(Message::Close(None)).await;
             info!("Log stream ended for deployment: {}", deployment_id);
         }
@@ -168,37 +188,40 @@ async fn handle_socket_with_user_internal(
     }
 }
 
-
-
 // Authentication function for WebSocket using your existing JWT system
 async fn authenticate_websocket_user(
     state: &AppState,
     token: Option<String>,
 ) -> Result<Uuid, AppError> {
-    
     let token = token.ok_or_else(|| {
         error!("No token provided for WebSocket authentication");
         AppError::auth("Token required")
     })?;
-    
+
     // Remove "Bearer " prefix if present
     let token = token.strip_prefix("Bearer ").unwrap_or(&token);
-    
-    // Use your existing JWT verification logic
-    let jwt_manager = JwtManager::new(&state.config.jwt_secret, state.config.jwt_expires_in);
-    let claims = jwt_manager.verify_token(token)
-        .map_err(|e| {
+    let user_id = if token.starts_with(&state.config.api_key_prefix) {
+        // API Key authentication
+        let user_id = verify_api_key(&state, &token).await?;
+        info!("API key authenticated for user {}", user_id);
+        user_id
+    } else {
+        // JWT token authentication
+        let jwt_manager = JwtManager::new(&state.config.jwt_secret, state.config.jwt_expires_in);
+        let claims = jwt_manager.verify_token(token).map_err(|e| {
             error!("JWT verification failed: {}", e);
             e
         })?;
-    
-    let user_id = Uuid::parse_str(&claims.sub)
-        .map_err(|e| {
+
+        let user_id = Uuid::parse_str(&claims.sub).map_err(|e| {
             error!("Invalid UUID in token claims: {}", e);
             AppError::auth("Invalid token format")
         })?;
-    
-    
+
+        info!("JWT authenticated for user {}", user_id);
+        user_id
+    };
+
     // Verify user exists and is active in database
     let user_exists = sqlx::query!(
         "SELECT id FROM users WHERE id = $1 AND is_active = true",
@@ -210,7 +233,7 @@ async fn authenticate_websocket_user(
         error!("Database error during user verification: {}", e);
         AppError::internal(&format!("Database error: {}", e))
     })?;
-    
+
     match user_exists {
         Some(_) => {
             info!("User {} authenticated successfully for WebSocket", user_id);
@@ -248,7 +271,7 @@ pub async fn get_logs_handler(
     State(state): State<AppState>,
     Path(deployment_id): Path<Uuid>,
     Query(query): Query<LogsQuery>,
-    user: AuthUser, 
+    user: AuthUser,
 ) -> Result<axum::response::Json<LogsResponse>, AppError> {
     // Verify deployment ownership
     if !verify_deployment_ownership(&state, deployment_id, user.user_id).await? {
