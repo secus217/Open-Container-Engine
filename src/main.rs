@@ -311,17 +311,18 @@ fn create_app(state: AppState) -> Router {
         .route("/v1/auth/forgot-password", post(handlers::auth::forgot_password))
         .route("/v1/auth/reset-password", post(handlers::auth::reset_password))
         // API Key management
-        .route("/v1/api-keys", get(handlers::auth::list_api_keys))
-        .route("/v1/api-keys", post(handlers::auth::create_api_key))
+        .route(
+            "/v1/api-keys",
+            get(handlers::auth::list_api_keys).post(handlers::auth::create_api_key),
+        )
         .route(
             "/v1/api-keys/:key_id",
             axum::routing::delete(handlers::auth::revoke_api_key),
         )
         // User profile management
-        .route("/v1/user/profile", get(handlers::user::get_profile))
         .route(
             "/v1/user/profile",
-            axum::routing::put(handlers::user::update_profile),
+            get(handlers::user::get_profile).put(handlers::user::update_profile),
         )
         .route(
             "/v1/user/password",
@@ -330,23 +331,13 @@ fn create_app(state: AppState) -> Router {
         // Deployment management
         .route(
             "/v1/deployments",
-            get(handlers::deployment::list_deployments),
-        )
-        .route(
-            "/v1/deployments",
-            post(handlers::deployment::create_deployment),
+            get(handlers::deployment::list_deployments).post(handlers::deployment::create_deployment),
         )
         .route(
             "/v1/deployments/:deployment_id",
-            get(handlers::deployment::get_deployment),
-        )
-        .route(
-            "/v1/deployments/:deployment_id",
-            axum::routing::put(handlers::deployment::update_deployment),
-        )
-        .route(
-            "/v1/deployments/:deployment_id",
-            axum::routing::delete(handlers::deployment::delete_deployment),
+            get(handlers::deployment::get_deployment)
+                .put(handlers::deployment::update_deployment)
+                .delete(handlers::deployment::delete_deployment),
         )
         .route(
             "/v1/deployments/:deployment_id/scale",
@@ -371,11 +362,7 @@ fn create_app(state: AppState) -> Router {
         // Domain management
         .route(
             "/v1/deployments/:deployment_id/domains",
-            get(handlers::deployment::list_domains),
-        )
-        .route(
-            "/v1/deployments/:deployment_id/domains",
-            post(handlers::deployment::add_domain),
+            get(handlers::deployment::list_domains).post(handlers::deployment::add_domain),
         )
         .route(
             "/v1/deployments/:deployment_id/domains/:domain_id",
@@ -414,19 +401,15 @@ fn create_app(state: AppState) -> Router {
             get(handlers::notifications::get_notification_stats),
         )
         // Webhook management
-        .route("/v1/webhooks", get(handlers::webhooks::list_webhooks))
-        .route("/v1/webhooks", post(handlers::webhooks::create_webhook))
         .route(
-            "/v1/webhooks/:webhook_id",
-            get(handlers::webhooks::get_webhook),
+            "/v1/webhooks",
+            get(handlers::webhooks::list_webhooks).post(handlers::webhooks::create_webhook),
         )
         .route(
             "/v1/webhooks/:webhook_id",
-            axum::routing::put(handlers::webhooks::update_webhook),
-        )
-        .route(
-            "/v1/webhooks/:webhook_id",
-            axum::routing::delete(handlers::webhooks::delete_webhook),
+            get(handlers::webhooks::get_webhook)
+                .put(handlers::webhooks::update_webhook)
+                .delete(handlers::webhooks::delete_webhook),
         )
         .route(
             "/v1/webhooks/:webhook_id/test",

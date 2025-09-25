@@ -29,7 +29,7 @@ pub struct LogsQuery {
 pub struct LogsResponse {
     pub logs: String,
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize,Clone)]
 pub struct PodInfo {
     pub name: String,
     pub status: String,
@@ -68,7 +68,7 @@ pub async fn get_deployment_pods(
 
     let k8s_service = KubernetesService::for_deployment(&deployment_id, &user.user_id).await?;
 
-    let k8s_pods = k8s_service.get_deployment_pods(&deployment_id).await?;
+    let k8s_pods: Vec<crate::services::kubernetes::PodInfo> = k8s_service.get_deployment_pods(&deployment_id).await?;
     
     // Convert from k8s PodInfo to our response PodInfo
     let pods: Vec<PodInfo> = k8s_pods.into_iter().map(|pod| PodInfo {

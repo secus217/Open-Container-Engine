@@ -57,16 +57,26 @@ pub enum WebhookEvent {
     DeploymentCompleted,
     DeploymentFailed,
     DeploymentDeleted,
+    DeploymentScaling,
+    DeploymentScaled,
+    DeploymentStartFailed,
+    DeploymentStopFailed,
+    DeploymentStopped,
     All,
 }
 
 impl WebhookEvent {
     pub fn as_str(&self) -> &'static str {
         match self {
-            WebhookEvent::DeploymentStarted => "deployment_started",
-            WebhookEvent::DeploymentCompleted => "deployment_completed", 
+            WebhookEvent::DeploymentCompleted => "deployment_completed",
             WebhookEvent::DeploymentFailed => "deployment_failed",
             WebhookEvent::DeploymentDeleted => "deployment_deleted",
+            WebhookEvent::DeploymentScaling => "deployment_scaling",
+            WebhookEvent::DeploymentScaled => "deployment_scaled",
+            WebhookEvent::DeploymentStarted => "deployment_started",
+            WebhookEvent::DeploymentStartFailed => "deployment_start_failed",
+            WebhookEvent::DeploymentStopFailed => "deployment_stop_failed",
+            WebhookEvent::DeploymentStopped => "deployment_stopped",
             WebhookEvent::All => "all",
         }
     }

@@ -26,6 +26,11 @@ const WEBHOOK_EVENTS = [
   { value: 'deployment_completed', label: 'Deployment Completed', description: 'When a deployment finishes successfully' },
   { value: 'deployment_failed', label: 'Deployment Failed', description: 'When a deployment fails' },
   { value: 'deployment_deleted', label: 'Deployment Deleted', description: 'When a deployment is deleted' },
+  { value: 'deployment_scaling', label: 'Deployment Scaling', description: 'When a deployment is being scaled' },
+  { value: 'deployment_scaled', label: 'Deployment Scaled', description: 'When a deployment scaling is completed' },
+  { value: 'deployment_start_failed', label: 'Deployment Start Failed', description: 'When starting a deployment fails' },
+  { value: 'deployment_stop_failed', label: 'Deployment Stop Failed', description: 'When stopping a deployment fails' },
+  { value: 'deployment_stopped', label: 'Deployment Stopped', description: 'When a deployment is stopped' },
   { value: 'all', label: 'All Events', description: 'Subscribe to all webhook events' },
 ];
 
