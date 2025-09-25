@@ -118,7 +118,7 @@ pub async fn setup_deployment_system(
         worker.start().await;
     });
 
-    tracing::info!("Deployment system initialized successfully");
+    // Deployment system initialized successfully
 
     Ok(deployment_sender)
 }
@@ -129,11 +129,11 @@ async fn open_browser_on_startup(port: u16) {
 
         let url = format!("http://localhost:{}", port);
 
-        tracing::info!("Opening browser at: {}", url);
+        // Opening browser
         println!("\n🚀 Opening browser at: {}\n", url);
 
         match open::that(&url) {
-            Ok(()) => tracing::info!("Browser opened successfully"),
+            Ok(()) => {}, // Browser opened successfully
             Err(e) => {
                 tracing::warn!("Failed to open browser automatically: {}", e);
                 println!(
@@ -160,14 +160,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Load configuration
     let config = Config::new()?;
-    tracing::info!("Starting Container Engine API server");
+    // Starting Container Engine API server
 
     // Initialize database
     let db = Database::new(&config.database_url).await?;
 
     // Run migrations
     db.migrate().await?;
-    tracing::info!("Database migrations completed");
+    // Database migrations completed
 
     // Initialize Redis
     let redis_client = redis::Client::open(config.redis_url.clone())?;
@@ -177,7 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     redis::cmd("PING")
         .query_async::<_, String>(&mut redis_conn)
         .await?;
-    tracing::info!("Redis connection established");
+    // Redis connection established
     // Setup notification manager
     let notification_manager = NotificationManager::new();
 
@@ -208,7 +208,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap_or_else(|_| "Container Engine".to_string()),
             ) {
                 Ok(service) => {
-                    tracing::info!("Email service initialized successfully with Mailtrap");
+                    // Email service initialized successfully
                     service
                 },
                 Err(e) => {
@@ -255,7 +255,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Run the server
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-    tracing::info!("Server listening on {}", addr);
+    // Server listening
     // Automatically open browser in development mode
     let is_dev = std::env::var("ENVIRONMENT").unwrap_or_default() != "production";
     let auto_open =
@@ -283,7 +283,7 @@ fn create_app(state: AppState) -> Router {
         println!("   cd apps/container-engine-frontend");
         println!("   npm install && npm run build\n");
     } else {
-        tracing::info!("Serving frontend from: {}", frontend_path);
+        // Serving frontend
 
         // Check index.html file
         let index_exists = std::path::Path::new(&format!("{}/index.html", frontend_path)).exists();

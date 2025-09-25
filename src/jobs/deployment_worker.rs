@@ -1,15 +1,12 @@
 use crate::handlers::logs::PodInfo;
-use crate::handlers::logs::PodsResponse;
 use crate::jobs::deployment_job::{DeploymentJob, JobType};
 use crate::notifications::{NotificationManager, NotificationType};
 use crate::services::kubernetes::KubernetesService;
 use crate::services::webhook::WebhookService;
-
-use axum::response::Json;
 use sqlx::PgPool;
 use std::time::Duration;
 use tokio::sync::mpsc;
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 use uuid::Uuid;
 
 pub struct DeploymentWorker {
@@ -35,13 +32,10 @@ impl DeploymentWorker {
     }
 
     pub async fn start(mut self) {
-        info!("Deployment worker started");
+        // Deployment worker started
 
         while let Some(job) = self.receiver.recv().await {
-            info!(
-                "Processing deployment job: {} (type: {:?})",
-                job.deployment_id, job.job_type
-            );
+            // Processing deployment job
 
             let k8s_service =
                 match KubernetesService::for_deployment(&job.deployment_id, &job.user_id).await {
@@ -80,10 +74,7 @@ impl DeploymentWorker {
     }
 
     async fn process_deployment(&self, job: DeploymentJob, k8s_service: KubernetesService) {
-        info!(
-            "Processing deployment: {} ({}) on port {}",
-            job.deployment_id, job.app_name, job.port
-        );
+        // Processing deployment
 
         // Update status to "deploying"
         if let Err(e) = Self::update_deployment_status(
@@ -123,10 +114,7 @@ impl DeploymentWorker {
         // Deploy to Kubernetes
         match k8s_service.deploy_application(&job).await {
             Ok(_) => {
-                info!(
-                    "Successfully deployed to Kubernetes: {} on port {}",
-                    job.deployment_id, job.port
-                );
+                // Successfully deployed to Kubernetes
 
                 // Wait a moment for ingress to be ready
                 tokio::time::sleep(Duration::from_secs(5)).await;
@@ -134,7 +122,7 @@ impl DeploymentWorker {
                 // Get the ingress URL after successful deployment
                 match k8s_service.get_ingress_url(&job.deployment_id).await {
                     Ok(ingress_url) => {
-                        info!("Retrieved ingress URL: {:?}", ingress_url);
+                        // Retrieved ingress URL
 
                         // Update deployment with success status and URL
                         if let Err(e) = Self::update_deployment_status(
@@ -148,9 +136,9 @@ impl DeploymentWorker {
                         {
                             error!("Failed to update deployment status to running: {}", e);
                         } else {
-                            info!("Deployment {} completed successfully", job.deployment_id);
-                            if let Some(url) = &ingress_url {
-                                info!("Application accessible at: {}", url);
+                            // Deployment completed successfully
+                            if let Some(_url) = &ingress_url {
+                                // Application accessible
                             }
 
                             // Call user webhooks for successful deployment
@@ -273,10 +261,7 @@ impl DeploymentWorker {
         k8s_service: KubernetesService,
         target_replicas: i32,
     ) {
-        info!(
-            "Processing scale job: {} to {} replicas",
-            job.deployment_id, target_replicas
-        );
+        // Processing scale job
 
         // Update status to "scaling"
         if let Err(e) =
@@ -325,7 +310,7 @@ impl DeploymentWorker {
                 {
                     error!("Failed to update deployment replicas: {}", e);
                 } else {
-                    info!("Successfully scaled deployment {} to {} replicas", job.deployment_id, target_replicas);
+                    // Successfully scaled deployment
 
                     // Call user webhooks for successful scale
                     self.call_user_webhooks(
@@ -367,7 +352,7 @@ impl DeploymentWorker {
                     // Call user webhooks for failed scale
                     self.call_user_webhooks(
                         job.user_id,
-                        crate::user::webhook_models::WebhookEvent::DeploymentFailed,
+                        crate::user::webhook_models::WebhookEvent::DeploymentScaleFailed,
                         &job,
                     )
                     .await;
@@ -391,7 +376,7 @@ impl DeploymentWorker {
 
     // Start processing logic
     async fn process_start(&self, job: DeploymentJob, k8s_service: KubernetesService) {
-        info!("Processing start job: {}", job.deployment_id);
+        // Processing start job
 
         // Get current deployment info from DB
         let deployment = match sqlx::query!(
@@ -458,7 +443,7 @@ impl DeploymentWorker {
                         &job,
                     )
                     .await;
-                    info!("Successfully started deployment: {}", job.deployment_id);
+                    // Successfully started deployment
                 }
             }
             Err(e) => {
@@ -477,7 +462,7 @@ impl DeploymentWorker {
 
     // Stop processing logic
     async fn process_stop(&self, job: DeploymentJob, k8s_service: KubernetesService) {
-        info!("Processing stop job: {}", job.deployment_id);
+        // Processing stop job
 
         // Update status to "stopping"
         if let Err(e) =
@@ -514,7 +499,7 @@ impl DeploymentWorker {
                         &job,
                     )
                     .await;
-                    info!("Successfully stopped deployment: {}", job.deployment_id);
+                    // Successfully stopped deployment
                 }
             }
             Err(e) => {
@@ -562,19 +547,19 @@ impl DeploymentWorker {
         k8s_service: &KubernetesService,
         deployment_id: Uuid,
     ) -> Option<String> {
-        info!("Waiting for external IP for deployment: {}", deployment_id);
+        // Waiting for external IP for deployment
 
         for attempt in 1..=60 {
             // Wait up to 5 minutes
             match k8s_service.get_service_external_ip(&deployment_id).await {
                 Ok(Some(ip)) => {
-                    info!("External IP obtained after {} attempts: {}", attempt, ip);
+                    // External IP obtained
                     return Some(ip);
                 }
                 Ok(None) => {
                     if attempt % 12 == 0 {
                         // Log every minute
-                        info!("Still waiting for external IP... (attempt {}/60)", attempt);
+                        // Still waiting for external IP
                     }
                 }
                 Err(e) => {
@@ -634,10 +619,7 @@ impl DeploymentWorker {
         };
 
         if webhooks.is_empty() {
-            info!(
-                "No active webhooks found for user {} and event {}",
-                user_id, event_str
-            );
+            // No active webhooks found
             return;
         }
 
@@ -652,6 +634,7 @@ impl DeploymentWorker {
             crate::user::webhook_models::WebhookEvent::DeploymentFailed => ("failed", None),
             crate::user::webhook_models::WebhookEvent::DeploymentDeleted => ("deleted", None),
             crate::user::webhook_models::WebhookEvent::DeploymentScaling => ("scaling", None),
+            crate::user::webhook_models::WebhookEvent::DeploymentScaleFailed => ("scaled", None),
             crate::user::webhook_models::WebhookEvent::DeploymentStartFailed => {
                 ("start_failed", None)
             }
@@ -740,10 +723,7 @@ impl DeploymentWorker {
             match request.send().await {
                 Ok(response) => {
                     if response.status().is_success() {
-                        info!(
-                            "Successfully sent webhook to {} for event {}",
-                            webhook.url, event_str
-                        );
+                        // Successfully sent webhook
                     } else {
                         warn!(
                             "Webhook call failed: {} returned status {}",

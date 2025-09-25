@@ -430,12 +430,7 @@ pub async fn forgot_password(
     let reset_url = format!("https://your-domain.com/reset-password?token={}", reset_token);
     
     // Temporarily use console logging instead of real email for demo
-    tracing::info!("=== PASSWORD RESET EMAIL (DEMO) ===");
-    tracing::info!("To: {} <{}>", user.username, user.email);
-    tracing::info!("Subject: Password Reset Request");
-    tracing::info!("Reset URL: {}", reset_url);
-    tracing::info!("Reset Token: {}", reset_token);
-    tracing::info!("================================");
+    // Password reset email (demo mode)
     
     if let Err(e) = state.email_service.send_password_reset_email(&user.email, &user.username, &reset_token, &reset_url) {
         tracing::error!("Failed to send password reset email: {}", e);

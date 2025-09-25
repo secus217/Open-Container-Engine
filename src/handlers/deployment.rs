@@ -28,7 +28,7 @@ pub async fn create_deployment(
     payload.validate()?;
 
     // Check if app name already exists for this user
-    let existing = sqlx::query!(
+    let _existing = sqlx::query!(
         "SELECT id FROM deployments WHERE user_id = $1 AND app_name = $2",
         user.user_id,
         payload.app_name
@@ -36,13 +36,13 @@ pub async fn create_deployment(
     .fetch_optional(&state.db.pool)
     .await?;
 
-    if existing.is_some() {
+    if _existing.is_some() {
         return Err(AppError::conflict("App name"));
     }
 
     let deployment_id = Uuid::new_v4();
     let now = Utc::now();
-    let url = format!(
+    let _url = format!(
         "https://{}.{}",
         payload.app_name, state.config.domain_suffix
     );
@@ -56,7 +56,6 @@ pub async fn create_deployment(
         .health_check
         .map(|hc| serde_json::to_value(hc))
         .transpose()?;
-    tracing::debug!("Inserting deployment record into database");
 
     sqlx::query!(
         r#"
@@ -85,9 +84,7 @@ pub async fn create_deployment(
     )
     .execute(&state.db.pool)
     .await?;
-    tracing::info!("Successfully inserted deployment record into database");
     // TODO: Implement Kubernetes deployment logic here
-    tracing::debug!("Creating deployment job");
     let job = DeploymentJob::new(
         deployment_id,
         user.user_id,
@@ -99,7 +96,6 @@ pub async fn create_deployment(
         resources,
         health_check,
     );
-    tracing::debug!("Sending job to deployment queue");
     if let Err(_) = state.deployment_sender.send(job).await {
         // Rollback the database record
         let _ = sqlx::query!("DELETE FROM deployments WHERE id = $1", deployment_id)
@@ -108,7 +104,6 @@ pub async fn create_deployment(
 
         return Err(AppError::internal("Failed to queue deployment"));
     }
-    tracing::info!("Deployment job queued successfully");
 
     // Send notification about deployment creation
     state.notification_manager
@@ -208,7 +203,7 @@ pub async fn update_deployment(
     payload.validate()?;
 
     // Check if deployment exists and belongs to user
-    let existing = sqlx::query!(
+    let _existing = sqlx::query!(
         "SELECT id FROM deployments WHERE id = $1 AND user_id = $2",
         deployment_id,
         user.user_id
