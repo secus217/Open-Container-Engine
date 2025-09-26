@@ -20,37 +20,9 @@ use crate::{
     error::AppError,
 };
 
-// Helper function to get frontend URL from headers or environment
-fn get_frontend_url(headers: &HeaderMap) -> String {
-    // Check if we're in production by looking at production domain env var
-    if let Ok(production_domain) = std::env::var("PRODUCTION_DOMAIN") {
-        // Try to get host from request headers
-        if let Some(host) = headers.get("host") {
-            if let Ok(host_str) = host.to_str() {
-                // If host matches production domain (decenter.run), use it
-                if host_str.contains("decenter.run") {
-                    return production_domain;
-                }
-                // If it's localhost or development, use frontend URL
-                else if host_str.contains("localhost") || host_str.contains("127.0.0.1") {
-                    return std::env::var("FRONTEND_BASE_URL")
-                        .unwrap_or_else(|_| "http://localhost:5173".to_string());
-                }
-                // For other domains (staging, etc), use HTTPS
-                else {
-                    return format!("https://{}", host_str);
-                }
-            }
-        }
-    }
-    
-    // Development fallback: try frontend base URL from env
-    if let Ok(frontend_url) = std::env::var("FRONTEND_BASE_URL") {
-        return frontend_url;
-    }
-    
-    // Final fallback
-    "http://localhost:5173".to_string()
+// Helper function to get frontend URL - always return production domain
+fn get_frontend_url(_headers: &HeaderMap) -> String {
+    "https://decenter.run".to_string()
 }
 
 #[utoipa::path(
@@ -464,6 +436,9 @@ pub async fn forgot_password(
     // Send password reset email
     let frontend_base_url = get_frontend_url(&headers);
     let reset_url = format!("{}/reset-password?token={}", frontend_base_url, reset_token);
+    
+    // Log for debugging
+    tracing::info!("Generated password reset URL: {} for user: {}", reset_url, user.email);
     
     // Send password reset email
     
