@@ -146,6 +146,11 @@ async fn open_browser_on_startup(port: u16) {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Install rustls crypto provider
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+    
     // Load environment variables from .env.local file
     dotenv::from_filename(".env.local").ok();
     
