@@ -1350,9 +1350,77 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
 
     let mut pod_infos = Vec::new();
     for pod in pod_list.items {
+        // Skip pods that are marked for deletion (Terminating state)
+        if pod.metadata.deletion_timestamp.is_some() {
+            continue;
+        }
+
         if let Some(name) = &pod.metadata.name {
             let status = if let Some(pod_status) = &pod.status {
                 pod_status.phase.clone().unwrap_or_else(|| "Unknown".to_string())
+            } else {
+                "Unknown".to_string()
+            };
+
+            // Only include pods that are not in Terminating state
+            if status == "Terminating" {
+                continue;
+            }
+
+            let ready = if let Some(pod_status) = &pod.status {
+                pod_status.container_statuses
+                    .as_ref()
+                    .map(|statuses| statuses.iter().all(|cs| cs.ready))
+                    .unwrap_or(false)
+            } else {
+                false
+            };
+
+            pod_infos.push(PodInfo {
+                name: name.clone(),
+                status,
+                ready,
+                restart_count: if let Some(pod_status) = &pod.status {
+                    pod_status.container_statuses
+                        .as_ref()
+                        .map(|statuses| statuses.iter().map(|cs| cs.restart_count).sum())
+                        .unwrap_or(0)
+                } else {
+                    0
+                },
+                node_name: pod.spec.as_ref().and_then(|s| s.node_name.clone()),
+                created_at: pod.metadata.creation_timestamp
+                    .map(|ts| ts.0.format("%Y-%m-%d %H:%M:%S UTC").to_string()),
+            });
+        }
+    }
+
+    Ok(pod_infos)
+}
+
+/// Get all pods for deployment including terminating ones (for debugging)
+pub async fn get_deployment_pods_all(&self, deployment_id: &Uuid) -> Result<Vec<PodInfo>, AppError> {
+    use k8s_openapi::api::core::v1::Pod;
+    use kube::api::{Api, ListParams};
+
+    let pods: Api<Pod> = Api::namespaced(self.client.clone(), &self.namespace);
+    let lp = ListParams::default().labels(&format!("deployment-id={}", deployment_id));
+
+    let pod_list = pods
+        .list(&lp)
+        .await
+        .map_err(|e| AppError::internal(&format!("Failed to list pods: {}", e)))?;
+
+    let mut pod_infos = Vec::new();
+    for pod in pod_list.items {
+        if let Some(name) = &pod.metadata.name {
+            let status = if let Some(pod_status) = &pod.status {
+                // Check if pod is marked for deletion
+                if pod.metadata.deletion_timestamp.is_some() {
+                    "Terminating".to_string()
+                } else {
+                    pod_status.phase.clone().unwrap_or_else(|| "Unknown".to_string())
+                }
             } else {
                 "Unknown".to_string()
             };
@@ -1387,6 +1455,7 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
 
     Ok(pod_infos)
 }
+
 pub async fn get_pod_logs(
     &self,
     pod_name: &str,

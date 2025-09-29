@@ -83,6 +83,37 @@ pub async fn get_deployment_pods(
     // Found pods for deployment
     Ok(Json(PodsResponse { pods }))
 }
+
+/// Get all pods for deployment including terminating ones (for debugging)
+pub async fn get_deployment_pods_debug(
+    State(state): State<AppState>,
+    Path(deployment_id): Path<Uuid>,
+    user: AuthUser,
+) -> Result<Json<PodsResponse>, AppError> {
+    // Verify deployment ownership
+    if !verify_deployment_ownership(&state, deployment_id, user.user_id).await? {
+        error!("User {} does not own deployment {}", user.user_id, deployment_id);
+        return Err(AppError::not_found("Deployment not found"));
+    }
+
+    let k8s_service = KubernetesService::for_deployment(&deployment_id, &user.user_id).await?;
+
+    let k8s_pods: Vec<crate::services::kubernetes::PodInfo> = k8s_service.get_deployment_pods_all(&deployment_id).await?;
+    
+    // Convert from k8s PodInfo to our response PodInfo
+    let pods: Vec<PodInfo> = k8s_pods.into_iter().map(|pod| PodInfo {
+        name: pod.name,
+        status: pod.status,
+        ready: pod.ready,
+        restart_count: pod.restart_count,
+        node_name: pod.node_name,
+        created_at: pod.created_at,
+    }).collect();
+
+    // Found all pods for deployment (including terminating)
+    Ok(Json(PodsResponse { pods }))
+}
+
 pub async fn get_pod_logs(
     State(state): State<AppState>,
     Path((deployment_id, pod_name)): Path<(Uuid, String)>,
