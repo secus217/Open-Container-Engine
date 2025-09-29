@@ -634,7 +634,7 @@ impl DeploymentWorker {
             crate::user::webhook_models::WebhookEvent::DeploymentFailed => ("failed", None),
             crate::user::webhook_models::WebhookEvent::DeploymentDeleted => ("deleted", None),
             crate::user::webhook_models::WebhookEvent::DeploymentScaling => ("scaling", None),
-            crate::user::webhook_models::WebhookEvent::DeploymentScaleFailed => ("scaled", None),
+            crate::user::webhook_models::WebhookEvent::DeploymentScaleFailed => ("scale_failed", None),
             crate::user::webhook_models::WebhookEvent::DeploymentStartFailed => {
                 ("start_failed", None)
             }
