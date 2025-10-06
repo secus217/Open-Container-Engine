@@ -363,7 +363,7 @@ impl KubernetesService {
                 ports: Some(vec![ServicePort {
                     port: job.port, // External port (82) - user requested
                     target_port: Some(
-                        k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(80), // Container port (80) - actual
+                        k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(job.port), // Container port (80) - actual
                     ),
                     name: Some("http".to_string()),
                     protocol: Some("TCP".to_string()),
@@ -1036,7 +1036,7 @@ async fn detect_cluster_type(&self) -> Result<String, AppError> {
             name: "app".to_string(),
             image: Some(job.github_image_tag.clone()),
             ports: Some(vec![ContainerPort {
-                container_port: 80, // Container actual port
+                container_port: job.port, // Container actual port
                 name: Some("http".to_string()),
                 protocol: Some("TCP".to_string()),
                 ..Default::default()
