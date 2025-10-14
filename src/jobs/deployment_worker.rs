@@ -67,6 +67,8 @@ impl DeploymentWorker {
                 }
                 JobType::Start => self.process_start(job, k8s_service).await,
                 JobType::Stop => self.process_stop(job, k8s_service).await,
+                JobType::UpdateEnvVars => self.process_env_vars_update(job, k8s_service).await,
+                JobType::Restart => self.process_restart(job, k8s_service).await,
             }
         }
 
@@ -644,7 +646,12 @@ impl DeploymentWorker {
             crate::user::webhook_models::WebhookEvent::DeploymentStopped => {
                 ("stopped", None)
             },
-
+            crate::user::webhook_models::WebhookEvent::DeploymentUpdated => {
+                ("updated", None)
+            },
+            crate::user::webhook_models::WebhookEvent::DeploymentRestarted => {
+                ("restarted", None)
+            },
             crate::user::webhook_models::WebhookEvent::DeploymentScaled => {
                 ("scaled", None)
             },
@@ -735,6 +742,261 @@ impl DeploymentWorker {
                 Err(e) => {
                     error!("Failed to send webhook to {}: {}", webhook.url, e);
                 }
+            }
+        }
+    }
+
+    async fn process_env_vars_update(&self, job: DeploymentJob, k8s_service: KubernetesService) {
+        // Processing environment variables update
+
+        // Update status to "updating"
+        if let Err(e) = Self::update_deployment_status(
+            &self.db_pool,
+            job.deployment_id,
+            "updating",
+            None,
+            None,
+        )
+        .await
+        {
+            error!("Failed to update deployment status to updating: {}", e);
+            return;
+        }
+
+        // Send notification that env vars update is being processed
+        self.notification_manager
+            .send_to_user(
+                job.user_id,
+                NotificationType::DeploymentStatusChanged {
+                    deployment_id: job.deployment_id,
+                    status: "updating".to_string(),
+                    url: None,
+                    error_message: None,
+                },
+            )
+            .await;
+
+        // Get current deployment info from database
+        let deployment_info = match sqlx::query!(
+            "SELECT image, port, replicas, resources, health_check FROM deployments WHERE id = $1",
+            job.deployment_id
+        )
+        .fetch_optional(&self.db_pool)
+        .await
+        {
+            Ok(Some(info)) => info,
+            Ok(None) => {
+                error!("Deployment not found in database: {}", job.deployment_id);
+                let _ = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "failed",
+                    None,
+                    Some("Deployment not found in database"),
+                )
+                .await;
+                return;
+            }
+            Err(e) => {
+                error!("Failed to fetch deployment info: {}", e);
+                let _ = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "failed",
+                    None,
+                    Some(&format!("Failed to fetch deployment info: {}", e)),
+                )
+                .await;
+                return;
+            }
+        };
+
+        // Update the deployment with new environment variables  
+        let health_check = deployment_info.health_check
+            .and_then(|hc| serde_json::from_value::<crate::deployment::models::HealthCheck>(hc).ok());
+
+        let resources = serde_json::from_value::<crate::deployment::models::ResourceRequirements>(
+            deployment_info.resources
+        ).ok();
+
+        // Update the deployment in Kubernetes with new env vars
+        match k8s_service
+            .update_deployment_env_vars(
+                &job.deployment_id,
+                &job.app_name,
+                &deployment_info.image,
+                deployment_info.port,
+                &job.env_vars,
+                deployment_info.replicas,
+                resources.as_ref(),
+                health_check.as_ref(),
+            )
+            .await
+        {
+            Ok(_) => {
+                // Successfully updated environment variables
+                // Call user webhooks for env vars updated
+                self.call_user_webhooks(
+                    job.user_id,
+                    crate::user::webhook_models::WebhookEvent::DeploymentUpdated,
+                    &job,
+                )
+                .await;
+
+                // Update status to "running"
+                if let Err(e) = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "running",
+                    None,
+                    None,
+                )
+                .await
+                {
+                    error!("Failed to update deployment status to running: {}", e);
+                } else {
+                    // Send success notification
+                    self.notification_manager
+                        .send_to_user(
+                            job.user_id,
+                            NotificationType::DeploymentUpdated {
+                                deployment_id: job.deployment_id,
+                                app_name: job.app_name.clone(),
+                                changes: "Environment variables updated successfully".to_string(),
+                            },
+                        )
+                        .await;
+                }
+            }
+            Err(e) => {
+                error!(
+                    "Failed to update deployment env vars in Kubernetes: {}",
+                    e
+                );
+                // Update status to "failed"
+                if let Err(e) = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "failed",
+                    None,
+                    Some(&format!("Failed to update environment variables: {}", e)),
+                )
+                .await
+                {
+                    error!("Failed to update deployment status to failed: {}", e);
+                }
+
+                // Send error notification
+                self.notification_manager
+                    .send_to_user(
+                        job.user_id,
+                        NotificationType::DeploymentStatusChanged {
+                            deployment_id: job.deployment_id,
+                            status: "failed".to_string(),
+                            url: None,
+                            error_message: Some(format!("Failed to update environment variables: {}", e)),
+                        },
+                    )
+                    .await;
+            }
+        }
+    }
+
+    async fn process_restart(&self, job: DeploymentJob, k8s_service: KubernetesService) {
+        // Processing deployment restart
+
+        // Update status to "restarting"
+        if let Err(e) = Self::update_deployment_status(
+            &self.db_pool,
+            job.deployment_id,
+            "restarting",
+            None,
+            None,
+        )
+        .await
+        {
+            error!("Failed to update deployment status to restarting: {}", e);
+            return;
+        }
+
+        // Send notification that restart is being processed
+        self.notification_manager
+            .send_to_user(
+                job.user_id,
+                NotificationType::DeploymentStatusChanged {
+                    deployment_id: job.deployment_id,
+                    status: "restarting".to_string(),
+                    url: None,
+                    error_message: None,
+                },
+            )
+            .await;
+
+        // Restart the deployment in Kubernetes
+        match k8s_service.restart_deployment(&job.deployment_id).await {
+            Ok(_) => {
+                // Successfully restarted deployment
+                // Call user webhooks for restart completed
+                self.call_user_webhooks(
+                    job.user_id,
+                    crate::user::webhook_models::WebhookEvent::DeploymentRestarted,
+                    &job,
+                )
+                .await;
+
+                // Update status to "running"
+                if let Err(e) = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "running",
+                    None,
+                    None,
+                )
+                .await
+                {
+                    error!("Failed to update deployment status to running: {}", e);
+                } else {
+                    // Send success notification
+                    self.notification_manager
+                        .send_to_user(
+                            job.user_id,
+                            NotificationType::DeploymentStatusChanged {
+                                deployment_id: job.deployment_id,
+                                status: "running".to_string(),
+                                url: None,
+                                error_message: None,
+                            },
+                        )
+                        .await;
+                }
+            }
+            Err(e) => {
+                error!("Failed to restart deployment in Kubernetes: {}", e);
+                // Update status to "failed"
+                if let Err(e) = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "failed",
+                    None,
+                    Some(&format!("Failed to restart deployment: {}", e)),
+                )
+                .await
+                {
+                    error!("Failed to update deployment status to failed: {}", e);
+                }
+
+                // Send error notification
+                self.notification_manager
+                    .send_to_user(
+                        job.user_id,
+                        NotificationType::DeploymentStatusChanged {
+                            deployment_id: job.deployment_id,
+                            status: "failed".to_string(),
+                            url: None,
+                            error_message: Some(format!("Failed to restart deployment: {}", e)),
+                        },
+                    )
+                    .await;
             }
         }
     }

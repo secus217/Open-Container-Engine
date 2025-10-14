@@ -47,6 +47,9 @@ use tokio::sync::mpsc;
         handlers::user::get_profile,
         handlers::user::update_profile,
         handlers::user::change_password,
+        handlers::deployment::get_env_vars,
+        handlers::deployment::update_env_vars,
+        handlers::deployment::restart_deployment,
         health_check,
     ),
     components(
@@ -69,6 +72,8 @@ use tokio::sync::mpsc;
             user::models::UserProfile,
             user::models::UpdateProfileRequest,
             user::models::ChangePasswordRequest,
+            deployment::models::UpdateEnvVarsRequest,
+            deployment::models::EnvVarsResponse,
             error::ErrorResponse,
             error::ErrorDetails,
         )
@@ -77,6 +82,7 @@ use tokio::sync::mpsc;
         (name = "Authentication", description = "User authentication and authorization"),
         (name = "API Keys", description = "API key management"),
         (name = "User", description = "User profile management"),
+        (name = "Deployments", description = "Container deployment management"),
         (name = "Health", description = "Health check endpoints"),
     ),
     info(
@@ -349,12 +355,20 @@ fn create_app(state: AppState) -> Router {
             axum::routing::patch(handlers::deployment::scale_deployment),
         )
         .route(
+            "/v1/deployments/:deployment_id/env",
+            get(handlers::deployment::get_env_vars).patch(handlers::deployment::update_env_vars),
+        )
+        .route(
             "/v1/deployments/:deployment_id/start",
             post(handlers::deployment::start_deployment),
         )
         .route(
             "/v1/deployments/:deployment_id/stop",
             post(handlers::deployment::stop_deployment),
+        )
+        .route(
+            "/v1/deployments/:deployment_id/restart",
+            post(handlers::deployment::restart_deployment),
         )
         .route(
             "/v1/deployments/:deployment_id/metrics",

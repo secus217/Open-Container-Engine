@@ -48,8 +48,8 @@ else \
     echo "Building with offline mode"; \
     SQLX_OFFLINE=true cargo build --release --verbose; \
 fi
-    
-    # Final stage - Runtime (use Ubuntu 24.04 for newer GLIBC)
+
+# Final stage - Runtime (use Ubuntu 24.04 for newer GLIBC)
 FROM ubuntu:24.04
 
 # Install runtime dependencies

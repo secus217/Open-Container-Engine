@@ -13,7 +13,7 @@ use kube::{api::PostParams, Api, Client};
 use serde_json::Value;
 use std::collections::BTreeMap;
 use tokio::process::Command;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::jobs::deployment_job::DeploymentJob;
@@ -1854,6 +1854,198 @@ pub async fn get_deployment_logs_merged(
                 // Fallback: try to get from any ingress-nginx service
                 warn!("Could not find ingress-nginx-controller service, using fallback");
                 Ok("127.0.0.1".to_string()) // Fallback for local development
+            }
+        }
+    }
+
+    /// Update environment variables of an existing deployment
+    pub async fn update_deployment_env_vars(
+        &self,
+        deployment_id: &Uuid,
+        app_name: &str,
+        image: &str,
+        port: i32,
+        env_vars: &std::collections::HashMap<String, String>,
+        replicas: i32,
+        resources: Option<&crate::deployment::models::ResourceRequirements>,
+        health_check: Option<&crate::deployment::models::HealthCheck>,
+    ) -> Result<(), AppError> {
+        use k8s_openapi::api::apps::v1::{Deployment, DeploymentSpec};
+        use k8s_openapi::api::core::v1::{Container, ContainerPort, PodSpec, PodTemplateSpec, EnvVar};
+        use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta};
+        use std::collections::BTreeMap;
+
+        let deployment_name = self.generate_deployment_name(deployment_id);
+        
+        info!(
+            "Updating environment variables for deployment: {} ({})",
+            deployment_name, app_name
+        );
+
+        // Convert env vars to Kubernetes format
+        let k8s_env_vars: Vec<EnvVar> = env_vars
+            .iter()
+            .map(|(k, v)| EnvVar {
+                name: k.clone(),
+                value: Some(v.clone()),
+                ..Default::default()
+            })
+            .collect();
+
+        // Create resource requirements
+        let resources_json = resources.map(|r| serde_json::to_value(r).unwrap_or_default());
+        let k8s_resources = self.parse_resource_requirements(&resources_json);
+
+        // Create health check probes
+        let health_check_json = health_check.map(|hc| serde_json::to_value(hc).unwrap_or_default());
+        let (liveness_probe, readiness_probe) = self.parse_health_probes(&health_check_json, port);
+
+        // Create container spec
+        let container = Container {
+            name: "app".to_string(),
+            image: Some(image.to_string()),
+            image_pull_policy: Some("Always".to_string()),
+            ports: Some(vec![ContainerPort {
+                container_port: port,
+                name: Some("http".to_string()),
+                protocol: Some("TCP".to_string()),
+                ..Default::default()
+            }]),
+            env: Some(k8s_env_vars),
+            resources: k8s_resources,
+            liveness_probe,
+            readiness_probe,
+            ..Default::default()
+        };
+
+        // Create labels
+        let mut labels = BTreeMap::new();
+        labels.insert("app".to_string(), app_name.to_string());
+        labels.insert("version".to_string(), "latest".to_string());
+        labels.insert("app.kubernetes.io/name".to_string(), app_name.to_string());
+        labels.insert("app.kubernetes.io/instance".to_string(), deployment_id.to_string());
+        labels.insert("app.kubernetes.io/component".to_string(), "web".to_string());
+        labels.insert("app.kubernetes.io/part-of".to_string(), "container-engine".to_string());
+        labels.insert("app.kubernetes.io/managed-by".to_string(), "container-engine".to_string());
+        labels.insert("container-engine.io/deployment-id".to_string(), deployment_id.to_string());
+
+        // Update the deployment
+        let deployment_spec = DeploymentSpec {
+            replicas: Some(replicas),
+            selector: LabelSelector {
+                match_labels: Some({
+                    let mut selector_labels = BTreeMap::new();
+                    selector_labels.insert("app".to_string(), app_name.to_string());
+                    selector_labels.insert("container-engine.io/deployment-id".to_string(), deployment_id.to_string());
+                    selector_labels
+                }),
+                ..Default::default()
+            },
+            template: PodTemplateSpec {
+                metadata: Some(ObjectMeta {
+                    labels: Some(labels.clone()),
+                    ..Default::default()
+                }),
+                spec: Some(PodSpec {
+                    containers: vec![container],
+                    ..Default::default()
+                }),
+            },
+            ..Default::default()
+        };
+
+        let updated_deployment = Deployment {
+            metadata: ObjectMeta {
+                name: Some(deployment_name.clone()),
+                namespace: Some(self.namespace.clone()),
+                labels: Some(labels),
+                ..Default::default()
+            },
+            spec: Some(deployment_spec),
+            ..Default::default()
+        };
+
+        // Apply the update
+        let deployments: Api<Deployment> = Api::namespaced(self.client.clone(), &self.namespace);
+
+        match deployments
+            .replace(&deployment_name, &Default::default(), &updated_deployment)
+            .await
+        {
+            Ok(_) => {
+                info!(
+                    "Successfully updated environment variables for deployment: {}",
+                    deployment_name
+                );
+
+                // Wait for deployment to rollout
+                // Note: In a real implementation, you might want to wait for the rollout
+                // For now, we'll just log success
+                
+                Ok(())
+            }
+            Err(e) => {
+                error!(
+                    "Failed to update deployment {} environment variables: {}",
+                    deployment_name, e
+                );
+                Err(AppError::internal(&format!(
+                    "Failed to update deployment environment variables: {}",
+                    e
+                )))
+            }
+        }
+    }
+
+    /// Restart a deployment by performing a rolling restart
+    pub async fn restart_deployment(&self, deployment_id: &Uuid) -> Result<(), AppError> {
+        use k8s_openapi::api::apps::v1::Deployment;
+
+        use std::collections::BTreeMap;
+
+        let deployment_name = self.generate_deployment_name(deployment_id);
+        
+        info!("Restarting deployment: {}", deployment_name);
+
+        let deployments: Api<Deployment> = Api::namespaced(self.client.clone(), &self.namespace);
+
+        // Get current deployment
+        let current_deployment = deployments
+            .get(&deployment_name)
+            .await
+            .map_err(|e| AppError::internal(&format!("Failed to get deployment for restart: {}", e)))?;
+
+        // Add restart annotation to trigger rolling restart
+        let mut deployment = current_deployment.clone();
+        let restart_time = chrono::Utc::now().to_rfc3339();
+        
+        // Add restart annotation to metadata
+        if let Some(ref mut annotations) = deployment.metadata.annotations {
+            annotations.insert(
+                "kubectl.kubernetes.io/restartedAt".to_string(),
+                restart_time,
+            );
+        } else {
+            let mut annotations = BTreeMap::new();
+            annotations.insert(
+                "kubectl.kubernetes.io/restartedAt".to_string(),
+                restart_time,
+            );
+            deployment.metadata.annotations = Some(annotations);
+        }
+
+        // Apply the restart annotation
+        match deployments
+            .replace(&deployment_name, &Default::default(), &deployment)
+            .await
+        {
+            Ok(_) => {
+                info!("Successfully triggered restart for deployment: {}", deployment_name);
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to restart deployment {}: {}", deployment_name, e);
+                Err(AppError::internal(&format!("Failed to restart deployment: {}", e)))
             }
         }
     }

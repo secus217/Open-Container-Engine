@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::collections::HashMap;
 use std::net::IpAddr;
 use std::time::Duration;
 use trust_dns_resolver::config::*;

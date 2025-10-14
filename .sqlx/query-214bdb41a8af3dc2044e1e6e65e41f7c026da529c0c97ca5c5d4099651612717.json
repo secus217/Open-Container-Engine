@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE deployments \n        SET env_vars = $1,\n            status = 'updating',\n            updated_at = NOW()\n        WHERE id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "214bdb41a8af3dc2044e1e6e65e41f7c026da529c0c97ca5c5d4099651612717"
+}

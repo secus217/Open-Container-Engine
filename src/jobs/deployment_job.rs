@@ -8,6 +8,8 @@ pub enum JobType {
     Scale { target_replicas: i32 },
     Start,
     Stop,
+    UpdateEnvVars,
+    Restart,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,6 +109,47 @@ impl DeploymentJob {
             port: 0,
             env_vars: HashMap::new(),
             replicas: 0,
+            resources: None,
+            health_check: None,
+            created_at: chrono::Utc::now(),
+        }
+    }
+
+    pub fn new_env_update(
+        deployment_id: Uuid,
+        user_id: Uuid,
+        app_name: String,
+        env_vars: Option<HashMap<String, String>>,
+    ) -> Self {
+        Self {
+            deployment_id,
+            user_id,
+            job_type: JobType::UpdateEnvVars,
+            app_name,
+            github_image_tag: String::new(),
+            port: 0,
+            env_vars: env_vars.unwrap_or_default(),
+            replicas: 1, // Will be determined from DB if needed
+            resources: None,
+            health_check: None,
+            created_at: chrono::Utc::now(),
+        }
+    }
+
+    pub fn new_restart(
+        deployment_id: Uuid,
+        user_id: Uuid,
+        app_name: String,
+    ) -> Self {
+        Self {
+            deployment_id,
+            user_id,
+            job_type: JobType::Restart,
+            app_name,
+            github_image_tag: String::new(),
+            port: 0,
+            env_vars: HashMap::new(),
+            replicas: 1, // Will be determined from DB
             resources: None,
             health_check: None,
             created_at: chrono::Utc::now(),

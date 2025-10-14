@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 use validator::Validate;
-use crate::jobs::deployment_job::{DeploymentJob, JobType};
+use crate::jobs::deployment_job::DeploymentJob;
 use crate::services::domain_validator::DomainValidator;
 use crate::services::ssl_certificate_manager::{SslCertificateManager, CertificateRequest, ChallengeType};
 
@@ -254,6 +254,149 @@ pub async fn update_deployment(
     })))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/v1/deployments/{deployment_id}/env",
+    params(
+        ("deployment_id" = Uuid, Path, description = "Deployment ID")
+    ),
+    request_body = UpdateEnvVarsRequest,
+    responses(
+        (status = 200, description = "Environment variables updated successfully"),
+        (status = 404, description = "Deployment not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "Deployments"
+)]
+pub async fn update_env_vars(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(deployment_id): Path<Uuid>,
+    Json(payload): Json<UpdateEnvVarsRequest>,
+) -> Result<Json<Value>, AppError> {
+    payload.validate()?;
+
+    // Check if deployment exists and belongs to user
+    let deployment = sqlx::query!(
+        "SELECT id, app_name, env_vars FROM deployments WHERE id = $1 AND user_id = $2",
+        deployment_id,
+        user.user_id
+    )
+    .fetch_optional(&state.db.pool)
+    .await?
+    .ok_or_else(|| AppError::not_found("Deployment"))?;
+
+    // Get existing env vars
+    let mut existing_env_vars: HashMap<String, String> = 
+        serde_json::from_value(deployment.env_vars).unwrap_or_default();
+
+    // Merge with new env vars (new values overwrite existing ones)
+    for (key, value) in payload.env_vars.iter() {
+        existing_env_vars.insert(key.clone(), value.clone());
+    }
+
+    // Convert back to JSON
+    let updated_env_vars_json = serde_json::to_value(&existing_env_vars)?;
+
+    // Update deployment in database
+    sqlx::query!(
+        r#"
+        UPDATE deployments 
+        SET env_vars = $1,
+            status = 'updating',
+            updated_at = NOW()
+        WHERE id = $2
+        "#,
+        updated_env_vars_json,
+        deployment_id
+    )
+    .execute(&state.db.pool)
+    .await?;
+
+    let app_name = deployment.app_name.clone();
+
+    // Create deployment job to apply env var changes
+    let job = DeploymentJob::new_env_update(
+        deployment_id,
+        user.user_id,
+        app_name.clone(),
+        Some(existing_env_vars.clone()),
+    );
+
+    // Send job to worker queue
+    if let Err(_) = state.deployment_sender.send(job).await {
+        // Rollback status on queue failure
+        let _ = sqlx::query!(
+            "UPDATE deployments SET status = 'failed', error_message = 'Failed to queue env vars update' WHERE id = $1",
+            deployment_id
+        )
+        .execute(&state.db.pool)
+        .await;
+
+        return Err(AppError::internal("Failed to queue env vars update"));
+    }
+
+    // Send notification about env vars update
+    state.notification_manager
+        .send_to_user(
+            user.user_id,
+            NotificationType::DeploymentUpdated {
+                deployment_id,
+                app_name: app_name.clone(),
+                changes: "Environment variables updated".to_string(),
+            },
+        )
+        .await;
+
+    Ok(Json(json!({
+        "id": deployment_id,
+        "status": "updating",
+        "message": "Environment variables update in progress",
+        "updated_env_vars": existing_env_vars,
+        "updated_at": Utc::now()
+    })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/deployments/{deployment_id}/env",
+    params(
+        ("deployment_id" = Uuid, Path, description = "Deployment ID")
+    ),
+    responses(
+        (status = 200, description = "Environment variables retrieved successfully", body = EnvVarsResponse),
+        (status = 404, description = "Deployment not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "Deployments"
+)]
+pub async fn get_env_vars(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(deployment_id): Path<Uuid>,
+) -> Result<Json<EnvVarsResponse>, AppError> {
+    // Check if deployment exists and belongs to user
+    let deployment = sqlx::query!(
+        "SELECT id, app_name, env_vars, updated_at FROM deployments WHERE id = $1 AND user_id = $2",
+        deployment_id,
+        user.user_id
+    )
+    .fetch_optional(&state.db.pool)
+    .await?
+    .ok_or_else(|| AppError::not_found("Deployment"))?;
+
+    // Parse env vars from JSON
+    let env_vars: HashMap<String, String> = 
+        serde_json::from_value(deployment.env_vars).unwrap_or_default();
+
+    Ok(Json(EnvVarsResponse {
+        deployment_id,
+        app_name: deployment.app_name,
+        env_vars,
+        updated_at: deployment.updated_at,
+    }))
+}
+
 pub async fn scale_deployment(
     State(state): State<AppState>,
     user: AuthUser,
@@ -410,6 +553,69 @@ pub async fn stop_deployment(
     })))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/deployments/{deployment_id}/restart",
+    params(
+        ("deployment_id" = Uuid, Path, description = "Deployment ID")
+    ),
+    responses(
+        (status = 200, description = "Restart operation queued successfully"),
+        (status = 404, description = "Deployment not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "Deployments"
+)]
+pub async fn restart_deployment(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(deployment_id): Path<Uuid>,
+) -> Result<Json<Value>, AppError> {
+    // Check if deployment exists and belongs to user
+    let deployment = sqlx::query!(
+        "SELECT app_name FROM deployments WHERE id = $1 AND user_id = $2",
+        deployment_id,
+        user.user_id
+    )
+    .fetch_optional(&state.db.pool)
+    .await?
+    .ok_or_else(|| AppError::not_found("Deployment"))?;
+
+    // Update status to "restarting"
+    sqlx::query!(
+        "UPDATE deployments SET status = 'restarting', updated_at = NOW() WHERE id = $1",
+        deployment_id
+    )
+    .execute(&state.db.pool)
+    .await?;
+
+    // Create restart job
+    let job = DeploymentJob::new_restart(
+        deployment_id,
+        user.user_id,
+        deployment.app_name,
+    );
+
+    // Send job to worker queue
+    if let Err(_) = state.deployment_sender.send(job).await {
+        // Rollback status on queue failure
+        let _ = sqlx::query!(
+            "UPDATE deployments SET status = 'failed', error_message = 'Failed to queue restart operation' WHERE id = $1",
+            deployment_id
+        )
+        .execute(&state.db.pool)
+        .await;
+
+        return Err(AppError::internal("Failed to queue restart operation"));
+    }
+
+    Ok(Json(json!({
+        "id": deployment_id,
+        "status": "restarting",
+        "message": "Restart operation queued"
+    })))
+}
+
 pub async fn delete_deployment(
     State(state): State<AppState>,
     user: AuthUser,
@@ -442,7 +648,7 @@ pub async fn delete_deployment(
             error!("Failed to create K8s service for deployment {} (user {}): {}", 
                    deployment_id, user.user_id, e);
             // Still try to delete from database even if K8s cleanup fails
-            let result = sqlx::query!(
+            let _result = sqlx::query!(
                 "DELETE FROM deployments WHERE id = $1 AND user_id = $2",
                 deployment_id,
                 user.user_id

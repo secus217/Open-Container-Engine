@@ -73,6 +73,10 @@ pub enum WebhookEvent {
     DeploymentStopFailed,
     #[serde(alias = "DeploymentStopped", alias = "deployment-stopped")]
     DeploymentStopped,
+    #[serde(alias = "DeploymentUpdated", alias = "deployment-updated")]
+    DeploymentUpdated,
+    #[serde(alias = "DeploymentRestarted", alias = "deployment-restarted")]
+    DeploymentRestarted,
     #[serde(alias = "All", alias = "ALL")]
     All,
 }
@@ -90,6 +94,8 @@ impl WebhookEvent {
             WebhookEvent::DeploymentStartFailed => "deployment_start_failed",
             WebhookEvent::DeploymentStopFailed => "deployment_stop_failed",
             WebhookEvent::DeploymentStopped => "deployment_stopped",
+            WebhookEvent::DeploymentUpdated => "deployment_updated",
+            WebhookEvent::DeploymentRestarted => "deployment_restarted",
             WebhookEvent::All => "all",
         }
     }

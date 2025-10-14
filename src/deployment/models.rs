@@ -150,6 +150,20 @@ pub struct UpdateDeploymentRequest {
 }
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct UpdateEnvVarsRequest {
+    /// Environment variables to update
+    pub env_vars: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EnvVarsResponse {
+    pub deployment_id: Uuid,
+    pub app_name: String,
+    pub env_vars: HashMap<String, String>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct ScaleDeploymentRequest {
     /// Number of replicas (0-100)
     #[validate(range(min = 0, max = 100))]

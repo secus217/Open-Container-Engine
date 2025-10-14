@@ -28,6 +28,12 @@ pub enum NotificationType {
         old_replicas: i32,
         new_replicas: i32,
     },
+    #[serde(rename = "deployment_updated")]
+    DeploymentUpdated {
+        deployment_id: Uuid,
+        app_name: String,
+        changes: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,6 +73,7 @@ impl WebSocketMessage {
             NotificationType::DeploymentCreated { .. } => "deployment_created",
             NotificationType::DeploymentDeleted { .. } => "deployment_deleted",
             NotificationType::DeploymentScaled { .. } => "deployment_scaled",
+            NotificationType::DeploymentUpdated { .. } => "deployment_updated",
         };
 
         Self {

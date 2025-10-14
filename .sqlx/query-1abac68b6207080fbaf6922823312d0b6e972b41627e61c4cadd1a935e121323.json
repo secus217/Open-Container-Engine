@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE deployments SET status = 'failed', error_message = 'Failed to queue env vars update' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1abac68b6207080fbaf6922823312d0b6e972b41627e61c4cadd1a935e121323"
+}

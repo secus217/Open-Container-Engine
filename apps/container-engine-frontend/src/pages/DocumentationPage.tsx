@@ -17,7 +17,8 @@ import {
   SparklesIcon,
   ShieldCheckIcon,
   BoltIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 
 const DocumentationPage: React.FC = () => {
@@ -429,10 +430,10 @@ const DocumentationPage: React.FC = () => {
                               onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
-    "username": "your_username",
-    "email": "your@email.com",
-    "password": "secure_password",
-    "confirm_password": "secure_password"
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "password": "MySecure123!",
+    "confirm_password": "MySecure123!"
   }'`, 'register')}
                               className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                             >
@@ -453,11 +454,110 @@ const DocumentationPage: React.FC = () => {
                             {`curl -X POST https://decenter.run/v1/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
-    "username": "your_username",
-    "email": "your@email.com",
-    "password": "secure_password",
-    "confirm_password": "secure_password"
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "password": "MySecure123!",
+    "confirm_password": "MySecure123!"
   }'`}
+                          </pre>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
+                            <pre className="text-blue-800 text-sm overflow-x-auto">
+                              {`{
+  "username": "string",     // 3-50 characters, alphanumeric + underscore
+  "email": "string",        // Valid email format
+  "password": "string",     // Min 8 characters, mix of letters/numbers
+  "confirm_password": "string" // Must match password
+}`}
+                            </pre>
+                          </div>
+
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
+                            <pre className="text-green-800 text-sm overflow-x-auto">
+                              {`{
+  "message": "User registered successfully",
+  "user": {
+    "id": "01fdb67e-6732-412b-ac17-de06320a928d",
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "created_at": "2025-10-14T10:30:00Z"
+  }
+}`}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* User Login */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">2</span>
+                            User Login
+                          </h3>
+                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex space-x-1">
+                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-300 text-sm font-medium">curl</span>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "username": "john_doe",
+    "password": "MySecure123!"
+  }'`, 'login')}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {copiedSection === 'login' ? (
+                                <>
+                                  <CheckIcon className="h-4 w-4 text-green-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardDocumentIcon className="h-4 w-4" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                            {`curl -X POST https://decenter.run/v1/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "username": "john_doe",
+    "password": "MySecure123!"
+  }'`}
+                          </pre>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                          <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
+                          <pre className="text-green-800 text-sm overflow-x-auto">
+                            {`{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "01fdb67e-6732-412b-ac17-de06320a928d",
+    "username": "john_doe",
+    "email": "john.doe@example.com"
+  }
+}`}
                           </pre>
                         </div>
                       </div>
@@ -466,7 +566,7 @@ const DocumentationPage: React.FC = () => {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">2</span>
+                            <span className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">3</span>
                             API Key Generation
                           </h3>
                           <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
@@ -484,7 +584,7 @@ const DocumentationPage: React.FC = () => {
                             </div>
                             <button
                               onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/api-keys \\
-  -H "Authorization: Bearer <access-token>" \\
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Production API Key",
@@ -507,7 +607,7 @@ const DocumentationPage: React.FC = () => {
                           </div>
                           <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
                             {`curl -X POST https://decenter.run/v1/api-keys \\
-  -H "Authorization: Bearer <access-token>" \\
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Production API Key",
@@ -515,8 +615,678 @@ const DocumentationPage: React.FC = () => {
   }'`}
                           </pre>
                         </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
+                            <pre className="text-blue-800 text-sm overflow-x-auto">
+                              {`{
+  "name": "string",          // Required: 1-100 characters
+  "description": "string"    // Optional: Max 500 characters
+}`}
+                            </pre>
+                          </div>
+
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
+                            <pre className="text-green-800 text-sm overflow-x-auto">
+                              {`{
+  "id": "key_1a2b3c4d5e6f7g8h",
+  "name": "Production API Key",
+  "description": "API key for production deployments",
+  "key": "sk-proj-abc123def456...",
+  "created_at": "2025-10-14T10:35:00Z",
+  "last_used_at": null
+}`}
+                            </pre>
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+                          <h5 className="font-bold text-amber-900 mb-2">⚠️ Important</h5>
+                          <p className="text-amber-800 text-sm">
+                            <strong>Save your API key immediately!</strong> The full key value is only shown once for security reasons. 
+                            Store it securely as you won't be able to retrieve it again.
+                          </p>
+                        </div>
                       </div>
 
+                      {/* List API Keys */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">4</span>
+                            List API Keys
+                          </h3>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">GET</span>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex space-x-1">
+                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-300 text-sm font-medium">curl</span>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`curl -X GET https://decenter.run/v1/api-keys \\
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."`, 'listkeys')}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {copiedSection === 'listkeys' ? (
+                                <>
+                                  <CheckIcon className="h-4 w-4 text-green-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardDocumentIcon className="h-4 w-4" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                            {`curl -X GET https://decenter.run/v1/api-keys \\
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."`}
+                          </pre>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                          <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
+                          <pre className="text-green-800 text-sm overflow-x-auto">
+                            {`{
+  "api_keys": [
+    {
+      "id": "key_1a2b3c4d5e6f7g8h",
+      "name": "Production API Key",
+      "description": "API key for production deployments",
+      "key_preview": "sk-proj-abc123...g8h",
+      "created_at": "2025-10-14T10:35:00Z",
+      "last_used_at": "2025-10-14T12:20:15Z"
+    },
+    {
+      "id": "key_9i8h7g6f5e4d3c2b",
+      "name": "Development Key",
+      "description": "Testing and development",
+      "key_preview": "sk-proj-def456...c2b",
+      "created_at": "2025-10-14T09:15:00Z",
+      "last_used_at": null
+    }
+  ]
+}`}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* Deploy Container */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">5</span>
+                            Deploy Container
+                          </h3>
+                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex space-x-1">
+                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-300 text-sm font-medium">curl</span>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/deployments \\
+  -H "Authorization: Bearer sk-proj-abc123def456..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "my-web-app",
+    "image": "nginx:1.21-alpine",
+    "domain": "my-app.decenter.run",
+    "replicas": 2,
+    "ports": [80, 443],
+    "env_vars": {
+      "NODE_ENV": "production",
+      "DB_HOST": "postgres.internal",
+      "API_KEY": "secret123",
+      "DEBUG": "false"
+    }
+  }'`, 'deploy')}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {copiedSection === 'deploy' ? (
+                                <>
+                                  <CheckIcon className="h-4 w-4 text-green-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardDocumentIcon className="h-4 w-4" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                            {`curl -X POST https://decenter.run/v1/deployments \\
+  -H "Authorization: Bearer sk-proj-abc123def456..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "my-web-app",
+    "image": "nginx:1.21-alpine",
+    "domain": "my-app.decenter.run",
+    "replicas": 2,
+    "ports": [80, 443],
+    "env_vars": {
+      "NODE_ENV": "production",
+      "DB_HOST": "postgres.internal",
+      "API_KEY": "secret123",
+      "DEBUG": "false"
+    }
+  }'`}
+                          </pre>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
+                            <pre className="text-blue-800 text-sm overflow-x-auto">
+                              {`{
+  "name": "string",           // Required: 3-50 chars, alphanumeric
+  "image": "string",          // Required: Docker image
+  "domain": "string",         // Optional: Custom domain
+  "replicas": number,         // Optional: Default 1, max 10
+  "ports": [number],          // Optional: Default [80]
+  "env_vars": {               // Optional: Environment variables
+    "key": "value"
+  }
+}`}
+                            </pre>
+                          </div>
+
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
+                            <pre className="text-green-800 text-sm overflow-x-auto">
+                              {`{
+  "id": "dep_9f8e7d6c5b4a3210",
+  "name": "my-web-app",
+  "image": "nginx:1.21-alpine",
+  "domain": "my-app.decenter.run",
+  "status": "pending",
+  "replicas": 2,
+  "ports": [80, 443],
+  "env_vars": {
+    "NODE_ENV": "production",
+    "DB_HOST": "postgres.internal",
+    "API_KEY": "***",
+    "DEBUG": "false"
+  },
+  "created_at": "2025-10-14T10:40:00Z",
+  "updated_at": "2025-10-14T10:40:00Z",
+  "url": "https://my-app.decenter.run"
+}`}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Get Deployment Details */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">6</span>
+                            Get Deployment Details
+                          </h3>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">GET</span>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex space-x-1">
+                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-300 text-sm font-medium">curl</span>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210 \\
+  -H "Authorization: Bearer sk-proj-abc123def456..."`, 'getdeploy')}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {copiedSection === 'getdeploy' ? (
+                                <>
+                                  <CheckIcon className="h-4 w-4 text-green-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardDocumentIcon className="h-4 w-4" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                            {`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210 \\
+  -H "Authorization: Bearer sk-proj-abc123def456..."`}
+                          </pre>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                          <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
+                          <pre className="text-green-800 text-sm overflow-x-auto">
+                            {`{
+  "id": "dep_9f8e7d6c5b4a3210",
+  "name": "my-web-app",
+  "image": "nginx:1.21-alpine",
+  "domain": "my-app.decenter.run",
+  "status": "running",
+  "replicas": 2,
+  "ports": [80, 443],
+  "env_vars": {
+    "NODE_ENV": "production",
+    "DB_HOST": "postgres.internal",
+    "API_KEY": "***",
+    "DEBUG": "false"
+  },
+  "url": "https://my-app.decenter.run",
+  "created_at": "2025-10-14T10:40:00Z",
+  "updated_at": "2025-10-14T10:42:30Z",
+  "logs_url": "/v1/deployments/dep_9f8e7d6c5b4a3210/logs"
+}`}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* Environment Variables Management */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">7</span>
+                            Environment Variables Management
+                          </h3>
+                        </div>
+                        
+                        {/* Get Environment Variables */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-lg font-semibold text-gray-900">Get Environment Variables</h4>
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">GET</span>
+                          </div>
+                          
+                          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                            <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex space-x-1">
+                                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                                </div>
+                                <span className="text-gray-300 text-sm font-medium">curl</span>
+                              </div>
+                              <button
+                                onClick={() => copyToClipboard(`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
+  -H "Authorization: Bearer sk-proj-abc123def456..."`, 'getenv')}
+                                className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                              >
+                                {copiedSection === 'getenv' ? (
+                                  <>
+                                    <CheckIcon className="h-4 w-4 text-green-400" />
+                                    <span>Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ClipboardDocumentIcon className="h-4 w-4" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                              {`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
+  -H "Authorization: Bearer sk-proj-abc123def456..."`}
+                            </pre>
+                          </div>
+
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                            <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
+                            <pre className="text-green-800 text-sm overflow-x-auto">
+                              {`{
+  "env_vars": {
+    "NODE_ENV": "production",
+    "DATABASE_URL": "postgresql://user:pass@localhost:5432/mydb",
+    "API_KEY": "***",
+    "DEBUG": "false",
+    "PORT": "3000",
+    "REDIS_URL": "redis://localhost:6379"
+  }
+}`}
+                            </pre>
+                          </div>
+                        </div>
+
+                        {/* Update Environment Variables */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-lg font-semibold text-gray-900">Update Environment Variables</h4>
+                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full">PATCH</span>
+                          </div>
+                          
+                          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                            <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex space-x-1">
+                                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                                </div>
+                                <span className="text-gray-300 text-sm font-medium">curl</span>
+                              </div>
+                              <button
+                                onClick={() => copyToClipboard(`curl -X PATCH https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
+  -H "Authorization: Bearer sk-proj-abc123def456..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "env_vars": {
+      "NODE_ENV": "production",
+      "NEW_FEATURE_ENABLED": "true",
+      "API_TIMEOUT": "30000",
+      "CACHE_TTL": "3600"
+    }
+  }'`, 'updateenv')}
+                                className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                              >
+                                {copiedSection === 'updateenv' ? (
+                                  <>
+                                    <CheckIcon className="h-4 w-4 text-green-400" />
+                                    <span>Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ClipboardDocumentIcon className="h-4 w-4" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                              {`curl -X PATCH https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
+  -H "Authorization: Bearer sk-proj-abc123def456..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "env_vars": {
+      "NODE_ENV": "production",
+      "NEW_FEATURE_ENABLED": "true",
+      "API_TIMEOUT": "30000",
+      "CACHE_TTL": "3600"
+    }
+  }'`}
+                            </pre>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                              <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
+                              <pre className="text-blue-800 text-sm overflow-x-auto">
+                                {`{
+  "env_vars": {
+    "KEY_NAME": "string"  // Key-value pairs
+  }
+}`}
+                              </pre>
+                              <p className="text-blue-800 text-sm mt-2">
+                                <strong>Note:</strong> Only specified variables are updated. Existing variables remain unchanged.
+                              </p>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                              <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
+                              <pre className="text-green-800 text-sm overflow-x-auto">
+                                {`{
+  "message": "Environment variables updated",
+  "env_vars": {
+    "NODE_ENV": "production",
+    "NEW_FEATURE_ENABLED": "true",
+    "API_TIMEOUT": "30000",
+    "CACHE_TTL": "3600"
+  },
+  "updated_at": "2025-10-14T10:45:00Z"
+}`}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Deployment Restart */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">8</span>
+                            Deployment Restart
+                          </h3>
+                          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full">POST</span>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex space-x-1">
+                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-300 text-sm font-medium">curl</span>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/restart \\
+  -H "Authorization: Bearer sk-proj-abc123def456..."`, 'restart')}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {copiedSection === 'restart' ? (
+                                <>
+                                  <CheckIcon className="h-4 w-4 text-green-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardDocumentIcon className="h-4 w-4" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                            {`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/restart \\
+  -H "Authorization: Bearer sk-proj-abc123def456..."`}
+                          </pre>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                            <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
+                            <pre className="text-green-800 text-sm overflow-x-auto">
+                              {`{
+  "message": "Deployment restart initiated successfully",
+  "deployment_id": "dep_9f8e7d6c5b4a3210",
+  "status": "restarting",
+  "restart_timestamp": "2025-10-14T10:50:00Z"
+}`}
+                            </pre>
+                          </div>
+
+                          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+                            <h5 className="font-bold text-amber-900 mb-2">Restart Process</h5>
+                            <ul className="text-amber-800 text-sm space-y-1">
+                              <li>• Rolling restart (zero downtime)</li>
+                              <li>• Pods restarted one by one</li>
+                              <li>• Environment variables reloaded</li>
+                              <li>• Health checks performed</li>
+                              <li>• WebSocket notification sent</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Security Notice */}
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-6">
+                        <div className="flex items-start">
+                          <ShieldCheckIcon className="h-6 w-6 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-bold text-amber-900 mb-2">Security Best Practices</h4>
+                            <ul className="text-amber-800 text-sm space-y-1">
+                              <li>• Store API keys securely in environment variables</li>
+                              <li>• Use different API keys for different environments</li>
+                              <li>• Rotate API keys regularly for enhanced security</li>
+                              <li>• Never commit API keys to version control</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Webhooks Section */}
+                <section id="webhooks" className="scroll-mt-8">
+                  <div className="flex items-center mb-4 lg:mb-6">
+                    <BellIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Webhooks</h2>
+                  </div>
+
+                  <div className="space-y-4 lg:space-y-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
+                      <p className="text-gray-700 text-sm lg:text-base">
+                        Receive real-time notifications about deployment events via webhooks.
+                      </p>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Create Webhook */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">9</span>
+                            Create Webhook
+                          </h3>
+                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex space-x-1">
+                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-300 text-sm font-medium">curl</span>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/webhooks \\
+  -H "Authorization: Bearer sk-proj-abc123def456..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "url": "https://your-app.com/webhook",
+    "events": ["deployment.created", "deployment.updated", "deployment.failed"],
+    "secret": "your-webhook-secret",
+    "active": true
+  }'`, 'createwebhook')}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {copiedSection === 'createwebhook' ? (
+                                <>
+                                  <CheckIcon className="h-4 w-4 text-green-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardDocumentIcon className="h-4 w-4" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
+                            {`curl -X POST https://decenter.run/v1/webhooks \\
+  -H "Authorization: Bearer sk-proj-abc123def456..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "url": "https://your-app.com/webhook",
+    "events": ["deployment.created", "deployment.updated", "deployment.failed"],
+    "secret": "your-webhook-secret",
+    "active": true
+  }'`}
+                          </pre>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
+                            <pre className="text-blue-800 text-sm overflow-x-auto">
+                              {`{
+  "url": "string",              // Required: Webhook URL
+  "events": ["string"],         // Required: Event types
+  "secret": "string",           // Optional: Webhook secret
+  "active": boolean             // Optional: Default true
+}`}
+                            </pre>
+                          </div>
+
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
+                            <pre className="text-green-800 text-sm overflow-x-auto">
+                              {`{
+  "id": "wh_1a2b3c4d5e6f7g8h",
+  "url": "https://your-app.com/webhook",
+  "events": ["deployment.created", "deployment.updated"],
+  "active": true,
+  "created_at": "2025-10-14T10:55:00Z"
+}`}
+                            </pre>
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4">
+                          <h5 className="font-bold text-purple-900 mb-2">Available Events</h5>
+                          <div className="grid grid-cols-2 gap-2 text-purple-800 text-sm">
+                            <div>• deployment.created</div>
+                            <div>• deployment.updated</div>
+                            <div>• deployment.started</div>
+                            <div>• deployment.stopped</div>
+                            <div>• deployment.failed</div>
+                            <div>• deployment.restarted</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Quick Start */}
+                <section id="quick-start" className="scroll-mt-8">
+                  <div className="flex items-center mb-4 lg:mb-6">
+                    <RocketLaunchIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Quick Start</h2>
+                  </div>
+
+                  <div className="space-y-4 lg:space-y-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
+                      <p className="text-gray-700 text-sm lg:text-base">
+                        Get up and running with Container Engine in minutes with our comprehensive examples.
+                      </p>
+                    </div>
+
+                    <div className="space-y-6">
                       {/* Security Notice */}
                       <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-6">
                         <div className="flex items-start">
@@ -577,6 +1347,9 @@ const DocumentationPage: React.FC = () => {
                         { method: 'PATCH', endpoint: '/v1/deployments/{deployment_id}/scale', description: 'Scale deployment', color: 'yellow' },
                         { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/start', description: 'Start deployment', color: 'green' },
                         { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/stop', description: 'Stop deployment', color: 'red' },
+                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/restart', description: 'Restart deployment', color: 'yellow' },
+                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/env', description: 'Get environment variables', color: 'blue' },
+                        { method: 'PATCH', endpoint: '/v1/deployments/{deployment_id}/env', description: 'Update environment variables', color: 'yellow' },
                         { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/metrics', description: 'Get deployment metrics', color: 'blue' },
                         { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/status', description: 'Get deployment status', color: 'blue' },
                         // Domains
@@ -717,6 +1490,36 @@ const DocumentationPage: React.FC = () => {
   "replicas": 3
 }`}
                         </pre>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4 lg:p-6">
+                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Environment Variables Management</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2">Update environment variables:</p>
+                          <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
+                            <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
+                              {`# Update specific environment variables
+PATCH /v1/deployments/{deployment_id}/env
+{
+  "env_vars": {
+    "DEBUG_MODE": "true",
+    "CACHE_TTL": "3600"
+  }
+}`}
+                            </pre>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2">Restart deployment to apply changes:</p>
+                          <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
+                            <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
+                              {`# Perform rolling restart
+POST /v1/deployments/{deployment_id}/restart`}
+                            </pre>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -86,7 +86,17 @@ const DeploymentDetailPage: React.FC = () => {
   // State for scaling
   const [scaleReplicas, setScaleReplicas] = useState(1);
   const [isScaling, setIsScaling] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
   const { addNotificationHandler } = useNotifications();
+
+  // Environment Variables state
+  const [envVars, setEnvVars] = useState<{ [key: string]: string }>({});
+  const [isUpdatingEnv, setIsUpdatingEnv] = useState(false);
+  const [showAddEnvForm, setShowAddEnvForm] = useState(false);
+  const [newEnvKey, setNewEnvKey] = useState('');
+  const [newEnvValue, setNewEnvValue] = useState('');
+  const [editingEnvKey, setEditingEnvKey] = useState<string | null>(null);
+  const [editingEnvValue, setEditingEnvValue] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
@@ -109,13 +119,15 @@ const DeploymentDetailPage: React.FC = () => {
 
     try {
       setLoading(true);
-      const [detailsRes, logsRes] = await Promise.all([
+      const [detailsRes, logsRes, envRes] = await Promise.all([
         api.get(`/v1/deployments/${deploymentId}`),
-        api.get(`/v1/deployments/${deploymentId}/logs`, { params: { tail: 100 } })
+        api.get(`/v1/deployments/${deploymentId}/logs`, { params: { tail: 100 } }),
+        api.get(`/v1/deployments/${deploymentId}/env`)
       ]);
       setDeployment(detailsRes.data);
       setScaleReplicas(detailsRes.data.replicas);
       setLogs(logsRes.data.logs || []);
+      setEnvVars(envRes.data.env_vars || {});
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to fetch deployment details.');
@@ -150,7 +162,9 @@ const DeploymentDetailPage: React.FC = () => {
           (messageType === 'deployment_status_changed' && notificationData.deployment_id === deploymentId) ||
           (messageType === 'deployment_scaled' && notificationData.deployment_id === deploymentId) ||
           (messageType === 'deployment_created' && notificationData.deployment_id === deploymentId) ||
-          (messageType === 'deployment_deleted' && notificationData.deployment_id === deploymentId);
+          (messageType === 'deployment_deleted' && notificationData.deployment_id === deploymentId) ||
+          (messageType === 'deployment_updated' && notificationData.deployment_id === deploymentId) ||
+          (messageType === 'deployment_restarted' && notificationData.deployment_id === deploymentId);
 
         console.log("Is for current deployment:", isForCurrentDeployment);
         console.log("Current deployment ID:", deploymentId);
@@ -171,6 +185,10 @@ const DeploymentDetailPage: React.FC = () => {
             showToast(`Deployment ${notificationData.app_name} deleted`, 'error');
             // Redirect to deployments page after deletion
             setTimeout(() => navigate('/deployments'), 2000);
+          } else if (messageType === 'deployment_updated') {
+            showToast(`Deployment updated: ${notificationData.changes}`, 'success');
+          } else if (messageType === 'deployment_restarted') {
+            showToast(`Deployment ${notificationData.app_name} restarted successfully`, 'success');
           }
         }
       } catch (error) {
@@ -215,6 +233,113 @@ const DeploymentDetailPage: React.FC = () => {
     } catch (err: any) {
       showToast(err.response?.data?.error?.message || 'Failed to delete deployment.', 'error');
     }
+  };
+
+  const handleRestartDeployment = async () => {
+    if (!window.confirm('Are you sure you want to restart this deployment?')) {
+      return;
+    }
+    try {
+      setIsRestarting(true);
+      await api.post(`/v1/deployments/${deploymentId}/restart`);
+      showToast('Deployment restart initiated successfully!', 'success');
+      // Refresh deployment data after a short delay
+      setTimeout(() => {
+        fetchData();
+      }, 2000);
+    } catch (err: any) {
+      showToast(err.response?.data?.error?.message || 'Failed to restart deployment.', 'error');
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  // Environment Variables functions
+  const handleAddEnvVar = async () => {
+    if (!newEnvKey.trim() || !newEnvValue.trim()) {
+      showToast('Both key and value are required', 'error');
+      return;
+    }
+
+    if (envVars.hasOwnProperty(newEnvKey)) {
+      showToast('Environment variable key already exists', 'error');
+      return;
+    }
+
+    try {
+      setIsUpdatingEnv(true);
+      const updatedEnvVars = { ...envVars, [newEnvKey]: newEnvValue };
+      await api.patch(`/v1/deployments/${deploymentId}/env`, {
+        env_vars: { [newEnvKey]: newEnvValue }
+      });
+      
+      setEnvVars(updatedEnvVars);
+      setNewEnvKey('');
+      setNewEnvValue('');
+      setShowAddEnvForm(false);
+      showToast('Environment variable added successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.response?.data?.error?.message || 'Failed to add environment variable', 'error');
+    } finally {
+      setIsUpdatingEnv(false);
+    }
+  };
+
+  const handleUpdateEnvVar = async (key: string, value: string) => {
+    if (!value.trim()) {
+      showToast('Environment variable value cannot be empty', 'error');
+      return;
+    }
+
+    try {
+      setIsUpdatingEnv(true);
+      await api.patch(`/v1/deployments/${deploymentId}/env`, {
+        env_vars: { [key]: value }
+      });
+      
+      setEnvVars(prev => ({ ...prev, [key]: value }));
+      setEditingEnvKey(null);
+      setEditingEnvValue('');
+      showToast('Environment variable updated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.response?.data?.error?.message || 'Failed to update environment variable', 'error');
+    } finally {
+      setIsUpdatingEnv(false);
+    }
+  };
+
+  const handleDeleteEnvVar = async (key: string) => {
+    if (!window.confirm(`Are you sure you want to delete the environment variable "${key}"?`)) {
+      return;
+    }
+
+    try {
+      setIsUpdatingEnv(true);
+      const updatedEnvVars = { ...envVars };
+      delete updatedEnvVars[key];
+      
+      // Send all remaining env vars to backend (effectively removing the deleted one)
+      await api.patch(`/v1/deployments/${deploymentId}/env`, {
+        env_vars: updatedEnvVars
+      });
+      
+      setEnvVars(updatedEnvVars);
+      showToast('Environment variable deleted successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.response?.data?.error?.message || 'Failed to delete environment variable', 'error');
+    } finally {
+      setIsUpdatingEnv(false);
+    }
+  };
+
+  const startEditingEnvVar = (key: string, value: string) => {
+    setEditingEnvKey(key);
+    setEditingEnvValue(value);
+  };
+
+  const cancelEditingEnvVar = () => {
+    setEditingEnvKey(null);
+    setEditingEnvValue('');
   };
 
   const getStatusColor = (status: DeploymentStatus) => {
@@ -960,37 +1085,199 @@ const DeploymentDetailPage: React.FC = () => {
 
             {activeTab === 'settings' && (
               <div className="space-y-8">
-                {/* Environment Variables */}
+                {/* Quick Actions */}
                 <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                   <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
-                      <Cog6ToothIcon className="h-6 w-6 text-purple-600" />
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                      <Cog6ToothIcon className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">Environment Variables</h2>
-                      <p className="text-gray-600">Application configuration settings</p>
+                      <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
+                      <p className="text-gray-600">Common deployment operations</p>
                     </div>
                   </div>
 
-                  {Object.keys(deployment.env_vars).length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                      onClick={handleRestartDeployment}
+                      disabled={isRestarting || deployment.status !== 'running'}
+                      className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-500 transition-all font-medium shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                    >
+                      {isRestarting ? (
+                        <>
+                          <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
+                          Restarting...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowPathIcon className="h-5 w-5 mr-2" />
+                          Restart Deployment
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => window.open(deployment.url, '_blank')}
+                      disabled={!deployment.url || deployment.status !== 'running'}
+                      className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 disabled:from-gray-400 disabled:to-gray-500 transition-all font-medium shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                    >
+                      <GlobeAltIcon className="h-5 w-5 mr-2" />
+                      View Live App
+                    </button>
+                  </div>
+                </div>
+
+                {/* Environment Variables */}
+                <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
+                        <Cog6ToothIcon className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">Environment Variables</h2>
+                        <p className="text-gray-600">Application configuration settings</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAddEnvForm(true)}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"
+                    >
+                      <PlusIcon className="h-5 w-5 mr-2" />
+                      Add Variable
+                    </button>
+                  </div>
+
+                  {/* Add Environment Variable Form */}
+                  {showAddEnvForm && (
+                    <div className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-xl">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Environment Variable</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Key</label>
+                          <input
+                            type="text"
+                            placeholder="VARIABLE_NAME"
+                            value={newEnvKey}
+                            onChange={(e) => setNewEnvKey(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Value</label>
+                          <input
+                            type="text"
+                            placeholder="variable_value"
+                            value={newEnvValue}
+                            onChange={(e) => setNewEnvValue(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <button
+                          onClick={handleAddEnvVar}
+                          disabled={isUpdatingEnv || !newEnvKey.trim() || !newEnvValue.trim()}
+                          className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 transition-all font-medium"
+                        >
+                          {isUpdatingEnv ? (
+                            <>
+                              <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin inline" />
+                              Adding...
+                            </>
+                          ) : (
+                            'Add Variable'
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowAddEnvForm(false);
+                            setNewEnvKey('');
+                            setNewEnvValue('');
+                          }}
+                          className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {Object.keys(envVars).length > 0 ? (
                     <div className="space-y-3">
-                      {Object.entries(deployment.env_vars).map(([key, value]) => (
+                      {Object.entries(envVars).map(([key, value]) => (
                         <div key={key} className="flex items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
-                          <div className="flex-1 flex items-center space-x-4">
-                            <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border text-blue-700 font-semibold">
-                              {key}
-                            </code>
-                            <span className="text-gray-400 font-bold">=</span>
-                            <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border text-gray-800 flex-1">
-                              {value}
-                            </code>
-                          </div>
-                          <button
-                            onClick={() => copyToClipboard(`${key}=${value}`, 'Environment variable')}
-                            className="ml-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-all"
-                          >
-                            <ClipboardDocumentListIcon className="h-4 w-4" />
-                          </button>
+                          {editingEnvKey === key ? (
+                            // Edit mode
+                            <div className="flex-1 flex items-center space-x-4">
+                              <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border text-blue-700 font-semibold">
+                                {key}
+                              </code>
+                              <span className="text-gray-400 font-bold">=</span>
+                              <input
+                                type="text"
+                                value={editingEnvValue}
+                                onChange={(e) => setEditingEnvValue(e.target.value)}
+                                className="flex-1 font-mono text-sm bg-white px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleUpdateEnvVar(key, editingEnvValue);
+                                  } else if (e.key === 'Escape') {
+                                    cancelEditingEnvVar();
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleUpdateEnvVar(key, editingEnvValue)}
+                                  disabled={isUpdatingEnv}
+                                  className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all"
+                                >
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={cancelEditingEnvVar}
+                                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            // View mode
+                            <>
+                              <div className="flex-1 flex items-center space-x-4">
+                                <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border text-blue-700 font-semibold">
+                                  {key}
+                                </code>
+                                <span className="text-gray-400 font-bold">=</span>
+                                <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border text-gray-800 flex-1 truncate">
+                                  {value}
+                                </code>
+                              </div>
+                              <div className="flex items-center space-x-2 ml-4">
+                                <button
+                                  onClick={() => copyToClipboard(`${key}=${value}`, 'Environment variable')}
+                                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-all"
+                                >
+                                  <ClipboardDocumentListIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => startEditingEnvVar(key, value)}
+                                  className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all"
+                                >
+                                  <Cog6ToothIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteEnvVar(key)}
+                                  className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -999,12 +1286,31 @@ const DeploymentDetailPage: React.FC = () => {
                       <Cog6ToothIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-gray-900 mb-2">No Environment Variables</h3>
                       <p className="text-gray-600 mb-6">This deployment doesn't have any environment variables configured.</p>
-                      <button className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium">
+                      <button 
+                        onClick={() => setShowAddEnvForm(true)}
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium"
+                      >
                         <PlusIcon className="h-5 w-5 mr-2" />
                         Add Environment Variable
                       </button>
                     </div>
                   )}
+
+                  {/* Information Panel */}
+                  <div className="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+                    <div className="flex items-start">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-yellow-800 mb-1">Important Notes</h4>
+                        <ul className="text-sm text-yellow-700 space-y-1">
+                          <li>• Changes to environment variables will trigger a deployment restart</li>
+                          <li>• Environment variables are case-sensitive</li>
+                          <li>• Avoid storing sensitive data like passwords in plain text</li>
+                          <li>• Changes may take a few minutes to apply</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Health Check Settings */}
@@ -1078,7 +1384,10 @@ const DeploymentDetailPage: React.FC = () => {
                         <h3 className="font-semibold text-gray-900">Delete Deployment</h3>
                         <p className="text-gray-600 text-sm">Permanently delete this deployment and all associated data.</p>
                       </div>
-                      <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium">
+                      <button
+                        onClick={handleDeleteDeployment}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium"
+                      >
                         <TrashIcon className="h-4 w-4 mr-2 inline" />
                         Delete
                       </button>

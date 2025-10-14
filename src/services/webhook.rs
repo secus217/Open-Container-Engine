@@ -1,5 +1,5 @@
 use reqwest;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
