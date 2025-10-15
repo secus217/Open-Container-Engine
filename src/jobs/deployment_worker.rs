@@ -429,6 +429,16 @@ impl DeploymentWorker {
                 )
                 .await
                 {
+                    error!("Failed to update deployment status to running: {}", e);
+                    // Call user webhooks for failed start (database update failed)
+                    self.call_user_webhooks(
+                        job.user_id,
+                        crate::user::webhook_models::WebhookEvent::DeploymentStartFailed,
+                        &job,
+                    )
+                    .await;
+                } else {
+                    // Successfully started deployment
                     // Call user webhooks for successful start
                     self.call_user_webhooks(
                         job.user_id,
@@ -436,16 +446,6 @@ impl DeploymentWorker {
                         &job,
                     )
                     .await;
-                    error!("Failed to update deployment status to running: {}", e);
-                } else {
-                    // Call user webhooks for failed start
-                    self.call_user_webhooks(
-                        job.user_id,
-                        crate::user::webhook_models::WebhookEvent::DeploymentStartFailed,
-                        &job,
-                    )
-                    .await;
-                    // Successfully started deployment
                 }
             }
             Err(e) => {
@@ -456,6 +456,13 @@ impl DeploymentWorker {
                     "failed",
                     None,
                     Some(&format!("Start failed: {}", e)),
+                )
+                .await;
+                // Call user webhooks for failed start (K8s scale failed)
+                self.call_user_webhooks(
+                    job.user_id,
+                    crate::user::webhook_models::WebhookEvent::DeploymentStartFailed,
+                    &job,
                 )
                 .await;
             }
@@ -478,11 +485,14 @@ impl DeploymentWorker {
         // Scale to 0 replicas
         match k8s_service.scale_deployment(&job.deployment_id, 0).await {
             Ok(_) => {
-                if let Err(e) = sqlx::query!(
-                    "UPDATE deployments SET status = 'stopped', replicas = 0, updated_at = NOW() WHERE id = $1",
-                    job.deployment_id
+                // Only update status, keep replicas unchanged for restart
+                if let Err(e) = Self::update_deployment_status(
+                    &self.db_pool,
+                    job.deployment_id,
+                    "stopped",
+                    None,
+                    None,
                 )
-                .execute(&self.db_pool)
                 .await
                 {
                      // Call user webhooks for failed stop

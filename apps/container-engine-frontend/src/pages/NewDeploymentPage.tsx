@@ -76,7 +76,7 @@ const NewDeploymentPage: React.FC = () => {
         app_name,
         image,
         port,
-        envVars: formattedEnvVars,
+        env_vars: formattedEnvVars,
         replicas,
       });
 

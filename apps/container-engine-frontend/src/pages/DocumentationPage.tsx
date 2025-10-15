@@ -8,7 +8,6 @@ import {
   CogIcon,
   KeyIcon,
   ServerIcon,
-  DocumentTextIcon,
   ChevronRightIcon,
   ClipboardDocumentIcon,
   CheckIcon,
@@ -34,8 +33,8 @@ const DocumentationPage: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['getting-started', 'authentication', 'api-reference', 'deployment-guide', 'examples', 'configuration'];
-      const scrollPosition = window.scrollY + 100;
+      const sections = ['getting-started', 'authentication', 'api-reference', 'deployment-guide', 'webhooks', 'configuration'];
+      const scrollPosition = window.scrollY + 150; // Increased offset for better accuracy
 
       for (const sectionId of sections) {
         const element = document.getElementById(sectionId);
@@ -64,31 +63,31 @@ const DocumentationPage: React.FC = () => {
       id: 'authentication',
       title: 'Authentication',
       icon: KeyIcon,
-      description: 'User accounts and API key management'
+      description: 'Understanding auth flows and API keys'
+    },
+    {
+        id: 'deployment-guide',
+        title: 'Deployment Guide',
+        icon: ServerIcon,
+        description: 'Core concepts of deploying containers'
+    },
+    {
+        id: 'webhooks',
+        title: 'Webhooks',
+        icon: BellIcon,
+        description: 'Receive real-time event notifications'
+    },
+    {
+        id: 'configuration',
+        title: 'Configuration',
+        icon: CogIcon,
+        description: 'Advanced service configuration options'
     },
     {
       id: 'api-reference',
       title: 'API Reference',
       icon: CodeBracketIcon,
-      description: 'Complete API endpoint documentation'
-    },
-    {
-      id: 'deployment-guide',
-      title: 'Deployment Guide',
-      icon: ServerIcon,
-      description: 'Container deployment and management'
-    },
-    {
-      id: 'examples',
-      title: 'Examples',
-      icon: DocumentTextIcon,
-      description: 'Code examples and use cases'
-    },
-    {
-      id: 'configuration',
-      title: 'Configuration',
-      icon: CogIcon,
-      description: 'Advanced configuration options'
+      description: 'Complete endpoint documentation'
     }
   ];
 
@@ -222,12 +221,13 @@ const DocumentationPage: React.FC = () => {
             </div>
 
             {/* Desktop: Sticky sidebar */}
-            <div className="hidden xl:block bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 xl:sticky xl:top-24">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
-                <BookOpenIcon className="h-5 w-5 mr-3 text-blue-600" />
-                Contents
-              </h3>
-              <nav className="space-y-2">
+            <div className="hidden xl:block bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 xl:sticky xl:top-24 xl:max-h-[calc(100vh-8rem)] xl:overflow-y-auto">
+              <div className="p-6">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
+                  <BookOpenIcon className="h-5 w-5 mr-3 text-blue-600" />
+                  Contents
+                </h3>
+                <nav className="space-y-2">
                 {sections.map((section) => (
                   <a
                     key={section.id}
@@ -252,18 +252,19 @@ const DocumentationPage: React.FC = () => {
                 ))}
               </nav>
               
-              {/* Quick Actions */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4">Quick Actions</h4>
-                <div className="space-y-2">
-                  <Link to="/auth" className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-md hover:shadow-lg">
-                    <SparklesIcon className="h-4 w-4 mr-2" />
-                    Get Started
-                  </Link>
-                  <a href="#api-reference" className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                    <CodeBracketIcon className="h-4 w-4 mr-2" />
-                    View API
-                  </a>
+                {/* Quick Actions */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Quick Actions</h4>
+                  <div className="space-y-2">
+                    <Link to="/auth" className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-md hover:shadow-lg">
+                      <SparklesIcon className="h-4 w-4 mr-2" />
+                      Get Started
+                    </Link>
+                    <a href="#api-reference" className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                      <CodeBracketIcon className="h-4 w-4 mr-2" />
+                      View API Reference
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -271,7 +272,8 @@ const DocumentationPage: React.FC = () => {
 
           {/* Main Content - Mobile Optimized */}
           <div className="xl:col-span-4 order-1 xl:order-2">
-            <div className="space-y-6 sm:space-y-8 lg:space-y-12">
+            <div className="space-y-12 sm:space-y-16 lg:space-y-20">
+                
                 {/* Getting Started - Mobile Optimized */}
                 <section id="getting-started" className="scroll-mt-16 sm:scroll-mt-20 lg:scroll-mt-24">
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden mx-2 sm:mx-0">
@@ -297,9 +299,9 @@ const DocumentationPage: React.FC = () => {
                           </div>
                           <ul className="space-y-2 sm:space-y-3">
                             {[
-                              'Docker image (public or private)',
-                              'Container Engine account',
-                              'API key from dashboard'
+                              'A Docker image (public or private)',
+                              'A Container Engine account',
+                              'An API key from your dashboard'
                             ].map((item, index) => (
                               <li key={index} className="flex items-center text-blue-800 text-sm sm:text-base">
                                 <CheckIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mr-2 sm:mr-3 flex-shrink-0" />
@@ -317,9 +319,9 @@ const DocumentationPage: React.FC = () => {
                           </div>
                           <ul className="space-y-2 sm:space-y-3">
                             {[
-                              'Deploy in seconds, not minutes',
-                              'Auto-scaling & load balancing',
-                              'Built-in monitoring & logs'
+                              'Deploy globally in seconds, not minutes',
+                              'Auto-scaling & load balancing included',
+                              'Built-in monitoring & aggregated logs'
                             ].map((item, index) => (
                               <li key={index} className="flex items-center text-green-800 text-sm sm:text-base">
                                 <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mr-2 sm:mr-3 flex-shrink-0" />
@@ -338,34 +340,10 @@ const DocumentationPage: React.FC = () => {
                         </h3>
                         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                           {[
-                            { 
-                              step: 1, 
-                              title: 'Sign Up', 
-                              description: 'Create your free account',
-                              icon: '👤',
-                              color: 'from-blue-500 to-blue-600'
-                            },
-                            { 
-                              step: 2, 
-                              title: 'Get API Key', 
-                              description: 'Generate ',
-                              icon: '🔑',
-                              color: 'from-indigo-500 to-indigo-600'
-                            },
-                            { 
-                              step: 3, 
-                              title: 'Deploy Container', 
-                              description: 'Single API call',
-                              icon: '🚀',
-                              color: 'from-purple-500 to-purple-600'
-                            },
-                            { 
-                              step: 4, 
-                              title: 'Access Your App', 
-                              description: 'Visit generated URL',
-                              icon: '🌐',
-                              color: 'from-green-500 to-green-600'
-                            }
+                            { step: 1, title: 'Sign Up', description: 'Create your free account', icon: '👤', color: 'from-blue-500 to-blue-600' },
+                            { step: 2, title: 'Get API Key', description: 'Generate a key from your dashboard', icon: '🔑', color: 'from-indigo-500 to-indigo-600' },
+                            { step: 3, title: 'Deploy Container', description: 'Make a single API call', icon: '🚀', color: 'from-purple-500 to-purple-600' },
+                            { step: 4, title: 'Access Your App', description: 'Visit the provided URL', icon: '🌐', color: 'from-green-500 to-green-600' }
                           ].map((item) => (
                             <div key={item.step} className="group relative">
                               <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border border-gray-200/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -385,1209 +363,731 @@ const DocumentationPage: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Authentication */}
-                <section id="authentication" className="scroll-mt-24">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
-                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 sm:px-8 py-8">
-                      <div className="flex items-center text-white">
-                        <div className="p-3 bg-white/20 rounded-xl mr-4">
-                          <KeyIcon className="h-8 w-8" />
-                        </div>
-                        <div>
-                          <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold mb-2 leading-tight">Authentication</h2>
-                          <p className="text-indigo-100 text-lg">Secure API access with JWT tokens and API keys</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-                      {/* User Registration */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">1</span>
-                            User Registration
-                          </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/auth/register \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "username": "john_doe",
-    "email": "john.doe@example.com",
-    "password": "MySecure123!",
-    "confirm_password": "MySecure123!"
-  }'`, 'register')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'register' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X POST https://decenter.run/v1/auth/register \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "username": "john_doe",
-    "email": "john.doe@example.com",
-    "password": "MySecure123!",
-    "confirm_password": "MySecure123!"
-  }'`}
-                          </pre>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
-                            <pre className="text-blue-800 text-sm overflow-x-auto">
-                              {`{
-  "username": "string",     // 3-50 characters, alphanumeric + underscore
-  "email": "string",        // Valid email format
-  "password": "string",     // Min 8 characters, mix of letters/numbers
-  "confirm_password": "string" // Must match password
-}`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
-                            <pre className="text-green-800 text-sm overflow-x-auto">
-                              {`{
-  "message": "User registered successfully",
-  "user": {
-    "id": "01fdb67e-6732-412b-ac17-de06320a928d",
-    "username": "john_doe",
-    "email": "john.doe@example.com",
-    "created_at": "2025-10-14T10:30:00Z"
-  }
-}`}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* User Login */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">2</span>
-                            User Login
-                          </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/auth/login \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "username": "john_doe",
-    "password": "MySecure123!"
-  }'`, 'login')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'login' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X POST https://decenter.run/v1/auth/login \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "username": "john_doe",
-    "password": "MySecure123!"
-  }'`}
-                          </pre>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                          <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
-                          <pre className="text-green-800 text-sm overflow-x-auto">
-                            {`{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "user": {
-    "id": "01fdb67e-6732-412b-ac17-de06320a928d",
-    "username": "john_doe",
-    "email": "john.doe@example.com"
-  }
-}`}
-                          </pre>
-                        </div>
-                      </div>
-
-                      {/* API Key Generation */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">3</span>
-                            API Key Generation
-                          </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/api-keys \\
-  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "Production API Key",
-    "description": "API key for production deployments"
-  }'`, 'apikey')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'apikey' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X POST https://decenter.run/v1/api-keys \\
-  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "Production API Key",
-    "description": "API key for production deployments"
-  }'`}
-                          </pre>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
-                            <pre className="text-blue-800 text-sm overflow-x-auto">
-                              {`{
-  "name": "string",          // Required: 1-100 characters
-  "description": "string"    // Optional: Max 500 characters
-}`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
-                            <pre className="text-green-800 text-sm overflow-x-auto">
-                              {`{
-  "id": "key_1a2b3c4d5e6f7g8h",
-  "name": "Production API Key",
-  "description": "API key for production deployments",
-  "key": "sk-proj-abc123def456...",
-  "created_at": "2025-10-14T10:35:00Z",
-  "last_used_at": null
-}`}
-                            </pre>
-                          </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-                          <h5 className="font-bold text-amber-900 mb-2">⚠️ Important</h5>
-                          <p className="text-amber-800 text-sm">
-                            <strong>Save your API key immediately!</strong> The full key value is only shown once for security reasons. 
-                            Store it securely as you won't be able to retrieve it again.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* List API Keys */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">4</span>
-                            List API Keys
-                          </h3>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">GET</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X GET https://decenter.run/v1/api-keys \\
-  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."`, 'listkeys')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'listkeys' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X GET https://decenter.run/v1/api-keys \\
-  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."`}
-                          </pre>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                          <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
-                          <pre className="text-green-800 text-sm overflow-x-auto">
-                            {`{
-  "api_keys": [
-    {
-      "id": "key_1a2b3c4d5e6f7g8h",
-      "name": "Production API Key",
-      "description": "API key for production deployments",
-      "key_preview": "sk-proj-abc123...g8h",
-      "created_at": "2025-10-14T10:35:00Z",
-      "last_used_at": "2025-10-14T12:20:15Z"
-    },
-    {
-      "id": "key_9i8h7g6f5e4d3c2b",
-      "name": "Development Key",
-      "description": "Testing and development",
-      "key_preview": "sk-proj-def456...c2b",
-      "created_at": "2025-10-14T09:15:00Z",
-      "last_used_at": null
-    }
-  ]
-}`}
-                          </pre>
-                        </div>
-                      </div>
-
-                      {/* Deploy Container */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">5</span>
-                            Deploy Container
-                          </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/deployments \\
-  -H "Authorization: Bearer sk-proj-abc123def456..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "my-web-app",
-    "image": "nginx:1.21-alpine",
-    "domain": "my-app.decenter.run",
-    "replicas": 2,
-    "ports": [80, 443],
-    "env_vars": {
-      "NODE_ENV": "production",
-      "DB_HOST": "postgres.internal",
-      "API_KEY": "secret123",
-      "DEBUG": "false"
-    }
-  }'`, 'deploy')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'deploy' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X POST https://decenter.run/v1/deployments \\
-  -H "Authorization: Bearer sk-proj-abc123def456..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "my-web-app",
-    "image": "nginx:1.21-alpine",
-    "domain": "my-app.decenter.run",
-    "replicas": 2,
-    "ports": [80, 443],
-    "env_vars": {
-      "NODE_ENV": "production",
-      "DB_HOST": "postgres.internal",
-      "API_KEY": "secret123",
-      "DEBUG": "false"
-    }
-  }'`}
-                          </pre>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
-                            <pre className="text-blue-800 text-sm overflow-x-auto">
-                              {`{
-  "name": "string",           // Required: 3-50 chars, alphanumeric
-  "image": "string",          // Required: Docker image
-  "domain": "string",         // Optional: Custom domain
-  "replicas": number,         // Optional: Default 1, max 10
-  "ports": [number],          // Optional: Default [80]
-  "env_vars": {               // Optional: Environment variables
-    "key": "value"
-  }
-}`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
-                            <pre className="text-green-800 text-sm overflow-x-auto">
-                              {`{
-  "id": "dep_9f8e7d6c5b4a3210",
-  "name": "my-web-app",
-  "image": "nginx:1.21-alpine",
-  "domain": "my-app.decenter.run",
-  "status": "pending",
-  "replicas": 2,
-  "ports": [80, 443],
-  "env_vars": {
-    "NODE_ENV": "production",
-    "DB_HOST": "postgres.internal",
-    "API_KEY": "***",
-    "DEBUG": "false"
-  },
-  "created_at": "2025-10-14T10:40:00Z",
-  "updated_at": "2025-10-14T10:40:00Z",
-  "url": "https://my-app.decenter.run"
-}`}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Get Deployment Details */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">6</span>
-                            Get Deployment Details
-                          </h3>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">GET</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210 \\
-  -H "Authorization: Bearer sk-proj-abc123def456..."`, 'getdeploy')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'getdeploy' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210 \\
-  -H "Authorization: Bearer sk-proj-abc123def456..."`}
-                          </pre>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                          <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
-                          <pre className="text-green-800 text-sm overflow-x-auto">
-                            {`{
-  "id": "dep_9f8e7d6c5b4a3210",
-  "name": "my-web-app",
-  "image": "nginx:1.21-alpine",
-  "domain": "my-app.decenter.run",
-  "status": "running",
-  "replicas": 2,
-  "ports": [80, 443],
-  "env_vars": {
-    "NODE_ENV": "production",
-    "DB_HOST": "postgres.internal",
-    "API_KEY": "***",
-    "DEBUG": "false"
-  },
-  "url": "https://my-app.decenter.run",
-  "created_at": "2025-10-14T10:40:00Z",
-  "updated_at": "2025-10-14T10:42:30Z",
-  "logs_url": "/v1/deployments/dep_9f8e7d6c5b4a3210/logs"
-}`}
-                          </pre>
-                        </div>
-                      </div>
-
-                      {/* Environment Variables Management */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">7</span>
-                            Environment Variables Management
-                          </h3>
-                        </div>
-                        
-                        {/* Get Environment Variables */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-lg font-semibold text-gray-900">Get Environment Variables</h4>
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">GET</span>
-                          </div>
-                          
-                          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                            <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex space-x-1">
-                                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                                </div>
-                                <span className="text-gray-300 text-sm font-medium">curl</span>
-                              </div>
-                              <button
-                                onClick={() => copyToClipboard(`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
-  -H "Authorization: Bearer sk-proj-abc123def456..."`, 'getenv')}
-                                className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                              >
-                                {copiedSection === 'getenv' ? (
-                                  <>
-                                    <CheckIcon className="h-4 w-4 text-green-400" />
-                                    <span>Copied!</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <ClipboardDocumentIcon className="h-4 w-4" />
-                                    <span>Copy</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                            <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                              {`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
-  -H "Authorization: Bearer sk-proj-abc123def456..."`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                            <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
-                            <pre className="text-green-800 text-sm overflow-x-auto">
-                              {`{
-  "env_vars": {
-    "NODE_ENV": "production",
-    "DATABASE_URL": "postgresql://user:pass@localhost:5432/mydb",
-    "API_KEY": "***",
-    "DEBUG": "false",
-    "PORT": "3000",
-    "REDIS_URL": "redis://localhost:6379"
-  }
-}`}
-                            </pre>
-                          </div>
-                        </div>
-
-                        {/* Update Environment Variables */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-lg font-semibold text-gray-900">Update Environment Variables</h4>
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full">PATCH</span>
-                          </div>
-                          
-                          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                            <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex space-x-1">
-                                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                                </div>
-                                <span className="text-gray-300 text-sm font-medium">curl</span>
-                              </div>
-                              <button
-                                onClick={() => copyToClipboard(`curl -X PATCH https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
-  -H "Authorization: Bearer sk-proj-abc123def456..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "env_vars": {
-      "NODE_ENV": "production",
-      "NEW_FEATURE_ENABLED": "true",
-      "API_TIMEOUT": "30000",
-      "CACHE_TTL": "3600"
-    }
-  }'`, 'updateenv')}
-                                className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                              >
-                                {copiedSection === 'updateenv' ? (
-                                  <>
-                                    <CheckIcon className="h-4 w-4 text-green-400" />
-                                    <span>Copied!</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <ClipboardDocumentIcon className="h-4 w-4" />
-                                    <span>Copy</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                            <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                              {`curl -X PATCH https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/env \\
-  -H "Authorization: Bearer sk-proj-abc123def456..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "env_vars": {
-      "NODE_ENV": "production",
-      "NEW_FEATURE_ENABLED": "true",
-      "API_TIMEOUT": "30000",
-      "CACHE_TTL": "3600"
-    }
-  }'`}
-                            </pre>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                              <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
-                              <pre className="text-blue-800 text-sm overflow-x-auto">
-                                {`{
-  "env_vars": {
-    "KEY_NAME": "string"  // Key-value pairs
-  }
-}`}
-                              </pre>
-                              <p className="text-blue-800 text-sm mt-2">
-                                <strong>Note:</strong> Only specified variables are updated. Existing variables remain unchanged.
-                              </p>
-                            </div>
-
-                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                              <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
-                              <pre className="text-green-800 text-sm overflow-x-auto">
-                                {`{
-  "message": "Environment variables updated",
-  "env_vars": {
-    "NODE_ENV": "production",
-    "NEW_FEATURE_ENABLED": "true",
-    "API_TIMEOUT": "30000",
-    "CACHE_TTL": "3600"
-  },
-  "updated_at": "2025-10-14T10:45:00Z"
-}`}
-                              </pre>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Deployment Restart */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">8</span>
-                            Deployment Restart
-                          </h3>
-                          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full">POST</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/restart \\
-  -H "Authorization: Bearer sk-proj-abc123def456..."`, 'restart')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'restart' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c5b4a3210/restart \\
-  -H "Authorization: Bearer sk-proj-abc123def456..."`}
-                          </pre>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                            <h5 className="font-bold text-green-900 mb-2">Success Response (200)</h5>
-                            <pre className="text-green-800 text-sm overflow-x-auto">
-                              {`{
-  "message": "Deployment restart initiated successfully",
-  "deployment_id": "dep_9f8e7d6c5b4a3210",
-  "status": "restarting",
-  "restart_timestamp": "2025-10-14T10:50:00Z"
-}`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-                            <h5 className="font-bold text-amber-900 mb-2">Restart Process</h5>
-                            <ul className="text-amber-800 text-sm space-y-1">
-                              <li>• Rolling restart (zero downtime)</li>
-                              <li>• Pods restarted one by one</li>
-                              <li>• Environment variables reloaded</li>
-                              <li>• Health checks performed</li>
-                              <li>• WebSocket notification sent</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Security Notice */}
-                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-6">
-                        <div className="flex items-start">
-                          <ShieldCheckIcon className="h-6 w-6 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h4 className="font-bold text-amber-900 mb-2">Security Best Practices</h4>
-                            <ul className="text-amber-800 text-sm space-y-1">
-                              <li>• Store API keys securely in environment variables</li>
-                              <li>• Use different API keys for different environments</li>
-                              <li>• Rotate API keys regularly for enhanced security</li>
-                              <li>• Never commit API keys to version control</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Webhooks Section */}
-                <section id="webhooks" className="scroll-mt-8">
-                  <div className="flex items-center mb-4 lg:mb-6">
-                    <BellIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Webhooks</h2>
-                  </div>
-
-                  <div className="space-y-4 lg:space-y-6">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
-                      <p className="text-gray-700 text-sm lg:text-base">
-                        Receive real-time notifications about deployment events via webhooks.
-                      </p>
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* Create Webhook */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                            <span className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">9</span>
-                            Create Webhook
-                          </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">POST</span>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
-                          <div className="flex items-center justify-between p-4 bg-gray-800/50">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex space-x-1">
-                                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                              </div>
-                              <span className="text-gray-300 text-sm font-medium">curl</span>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/webhooks \\
-  -H "Authorization: Bearer sk-proj-abc123def456..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "url": "https://your-app.com/webhook",
-    "events": ["deployment.created", "deployment.updated", "deployment.failed"],
-    "secret": "your-webhook-secret",
-    "active": true
-  }'`, 'createwebhook')}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                              {copiedSection === 'createwebhook' ? (
-                                <>
-                                  <CheckIcon className="h-4 w-4 text-green-400" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardDocumentIcon className="h-4 w-4" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="p-3 sm:p-4 text-green-400 text-xs sm:text-sm overflow-x-auto">
-                            {`curl -X POST https://decenter.run/v1/webhooks \\
-  -H "Authorization: Bearer sk-proj-abc123def456..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "url": "https://your-app.com/webhook",
-    "events": ["deployment.created", "deployment.updated", "deployment.failed"],
-    "secret": "your-webhook-secret",
-    "active": true
-  }'`}
-                          </pre>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                            <h5 className="font-bold text-blue-900 mb-2">Request Body Schema</h5>
-                            <pre className="text-blue-800 text-sm overflow-x-auto">
-                              {`{
-  "url": "string",              // Required: Webhook URL
-  "events": ["string"],         // Required: Event types
-  "secret": "string",           // Optional: Webhook secret
-  "active": boolean             // Optional: Default true
-}`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                            <h5 className="font-bold text-green-900 mb-2">Success Response (201)</h5>
-                            <pre className="text-green-800 text-sm overflow-x-auto">
-                              {`{
-  "id": "wh_1a2b3c4d5e6f7g8h",
-  "url": "https://your-app.com/webhook",
-  "events": ["deployment.created", "deployment.updated"],
-  "active": true,
-  "created_at": "2025-10-14T10:55:00Z"
-}`}
-                            </pre>
-                          </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4">
-                          <h5 className="font-bold text-purple-900 mb-2">Available Events</h5>
-                          <div className="grid grid-cols-2 gap-2 text-purple-800 text-sm">
-                            <div>• deployment.created</div>
-                            <div>• deployment.updated</div>
-                            <div>• deployment.started</div>
-                            <div>• deployment.stopped</div>
-                            <div>• deployment.failed</div>
-                            <div>• deployment.restarted</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Quick Start */}
-                <section id="quick-start" className="scroll-mt-8">
-                  <div className="flex items-center mb-4 lg:mb-6">
-                    <RocketLaunchIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Quick Start</h2>
-                  </div>
-
-                  <div className="space-y-4 lg:space-y-6">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
-                      <p className="text-gray-700 text-sm lg:text-base">
-                        Get up and running with Container Engine in minutes with our comprehensive examples.
-                      </p>
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* Security Notice */}
-                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-6">
-                        <div className="flex items-start">
-                          <ShieldCheckIcon className="h-6 w-6 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h4 className="font-bold text-amber-900 mb-2">Security Best Practices</h4>
-                            <ul className="text-amber-800 text-sm space-y-1">
-                              <li>• Store API keys securely in environment variables</li>
-                              <li>• Use different API keys for different environments</li>
-                              <li>• Rotate API keys regularly for enhanced security</li>
-                              <li>• Never commit API keys to version control</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* API Reference */}
-                <section id="api-reference" className="scroll-mt-8">
-                  <div className="flex items-center mb-4 lg:mb-6">
-                    <CodeBracketIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">API Reference</h2>
-                  </div>
-
-                  <div className="space-y-4 lg:space-y-6">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
-                      <h3 className="text-base lg:text-lg font-semibold text-blue-900 mb-2">Base URL</h3>
-                      <code className="text-blue-800 bg-blue-100 px-2 lg:px-3 py-1 rounded text-xs lg:text-sm break-all">
-                        https://decenter.run/
-                      </code>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-6">
-                      {[ 
-                        // Authentication
-                        { method: 'POST', endpoint: '/v1/auth/register', description: 'Register a new user', color: 'green' },
-                        { method: 'POST', endpoint: '/v1/auth/login', description: 'Login and get access token', color: 'blue' },
-                        { method: 'POST', endpoint: '/v1/auth/refresh', description: 'Refresh access token', color: 'blue' },
-                        { method: 'POST', endpoint: '/v1/auth/logout', description: 'Logout user', color: 'red' },
-                        { method: 'POST', endpoint: '/v1/auth/forgot-password', description: 'Request password reset', color: 'yellow' },
-                        { method: 'POST', endpoint: '/v1/auth/reset-password', description: 'Reset password', color: 'yellow' },
-                        // API Keys
-                        { method: 'GET', endpoint: '/v1/api-keys', description: 'List API keys', color: 'blue' },
-                        { method: 'POST', endpoint: '/v1/api-keys', description: 'Create a new API key', color: 'green' },
-                        { method: 'DELETE', endpoint: '/v1/api-keys/{key_id}', description: 'Revoke an API key', color: 'red' },
-                        // User Profile
-                        { method: 'GET', endpoint: '/v1/user/profile', description: 'Get user profile', color: 'blue' },
-                        { method: 'PUT', endpoint: '/v1/user/profile', description: 'Update user profile', color: 'yellow' },
-                        { method: 'PUT', endpoint: '/v1/user/password', description: 'Change user password', color: 'yellow' },
-                        // Deployments
-                        { method: 'GET', endpoint: '/v1/deployments', description: 'List all deployments', color: 'blue' },
-                        { method: 'POST', endpoint: '/v1/deployments', description: 'Create a new deployment', color: 'green' },
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}', description: 'Get deployment details', color: 'blue' },
-                        { method: 'PUT', endpoint: '/v1/deployments/{deployment_id}', description: 'Update deployment', color: 'yellow' },
-                        { method: 'DELETE', endpoint: '/v1/deployments/{deployment_id}', description: 'Delete deployment', color: 'red' },
-                        { method: 'PATCH', endpoint: '/v1/deployments/{deployment_id}/scale', description: 'Scale deployment', color: 'yellow' },
-                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/start', description: 'Start deployment', color: 'green' },
-                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/stop', description: 'Stop deployment', color: 'red' },
-                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/restart', description: 'Restart deployment', color: 'yellow' },
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/env', description: 'Get environment variables', color: 'blue' },
-                        { method: 'PATCH', endpoint: '/v1/deployments/{deployment_id}/env', description: 'Update environment variables', color: 'yellow' },
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/metrics', description: 'Get deployment metrics', color: 'blue' },
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/status', description: 'Get deployment status', color: 'blue' },
-                        // Domains
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/domains', description: 'List domains for deployment', color: 'blue' },
-                        { method: 'POST', endpoint: '/v1/deployments/{deployment_id}/domains', description: 'Add domain to deployment', color: 'green' },
-                        { method: 'DELETE', endpoint: '/v1/deployments/{deployment_id}/domains/{domain_id}', description: 'Remove domain from deployment', color: 'red' },
-                        // Logs
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/logs', description: 'Get deployment logs', color: 'blue' },
-                        { method: 'GET', endpoint: '/v1/deployments/{deployment_id}/logs/stream', description: 'Stream deployment logs (WebSocket)', color: 'blue' },
-                        // Notifications
-                        { method: 'GET', endpoint: '/v1/ws/notifications', description: 'WebSocket notifications', color: 'blue' },
-                        { method: 'GET', endpoint: '/v1/ws/health', description: 'WebSocket health check', color: 'blue' },
-                        { method: 'GET', endpoint: '/v1/notifications/stats', description: 'Get notification stats', color: 'blue' },
-                        // Webhooks
-                        { method: 'GET', endpoint: '/v1/webhooks', description: 'List webhooks', color: 'blue' },
-                        { method: 'POST', endpoint: '/v1/webhooks', description: 'Create webhook', color: 'green' },
-                        { method: 'GET', endpoint: '/v1/webhooks/{webhook_id}', description: 'Get webhook details', color: 'blue' },
-                        { method: 'PUT', endpoint: '/v1/webhooks/{webhook_id}', description: 'Update webhook', color: 'yellow' },
-                        { method: 'DELETE', endpoint: '/v1/webhooks/{webhook_id}', description: 'Delete webhook', color: 'red' },
-                        // Health
-                        { method: 'GET', endpoint: '/health', description: 'Health check endpoint', color: 'blue' },
-                      ].map((api, index) => (
-                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 lg:p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center mb-2 space-y-1 sm:space-y-0">
-                            <span className={`px-2 py-1 text-xs font-bold rounded text-white bg-${api.color}-500 w-fit`}>
-                              {api.method}
-                            </span>
-                            <code className="sm:ml-3 text-gray-700 text-xs lg:text-sm break-all">{api.endpoint}</code>
-                          </div>
-                          <p className="text-xs lg:text-sm text-gray-600">{api.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-
-                {/* Deployment Guide */}
-                <section id="deployment-guide" className="scroll-mt-8">
-                  <div className="flex items-center mb-4 lg:mb-6">
-                    <ServerIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Deployment Guide</h2>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-3 lg:mb-4">Deploy Your First Container</h3>
-                    <div className="bg-gray-900 rounded-lg p-3 sm:p-4 lg:p-6 relative">
-                      <button
-                        onClick={() => copyToClipboard(`curl -X POST https://decenter.run/v1/deployments \\
-  -H "Authorization: Bearer <your-api-key>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "app_name": "hello-world",
-    "image": "nginx:latest",
-    "port": 80,
-    "env_vars": {
-      "ENVIRONMENT": "production"
-    },
-    "replicas": 1
-  }'`, 'deploy')}
-                        className="absolute top-2 right-2 lg:top-4 lg:right-4 p-1.5 lg:p-2 text-gray-400 hover:text-white transition-colors"
-                      >
-                        {copiedSection === 'deploy' ? (
-                          <CheckIcon className="h-4 w-4 lg:h-5 lg:w-5 text-green-400" />
-                        ) : (
-                          <ClipboardDocumentIcon className="h-4 w-4 lg:h-5 lg:w-5" />
-                        )}
-                      </button>
-                      <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                        {`curl -X POST https://decenter.run/v1/deployments \\
-  -H "Authorization: Bearer <your-api-key>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "app_name": "hello-world",
-    "image": "nginx:latest",
-    "port": 80,
-    "env_vars": {
-      "ENVIRONMENT": "production"
-    },
-    "replicas": 1
-  }'`}
-                      </pre>
-                    </div>
-
-                    <div className="mt-4 lg:mt-6 p-4 lg:p-6 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="text-base lg:text-lg font-semibold text-green-900 mb-2">Success Response</h4>
-                      <pre className="text-green-800 text-xs lg:text-sm overflow-x-auto">
-                        {`{
-  "id": "dpl-a1b2c3d4e5",
-  "app_name": "hello-world",
-  "status": "pending",
-  "url": "https://hello-world.vinhomes.co.uk",
-  "message": "Deployment is being processed"
-}`}
-                      </pre>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Examples */}
-                <section id="examples" className="scroll-mt-8">
-                  <div className="flex items-center mb-4 lg:mb-6">
-                    <DocumentTextIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Examples</h2>
-                  </div>
-
-                  <div className="grid gap-4 lg:gap-6">
-                    <div className="bg-gray-50 rounded-lg p-4 lg:p-6">
-                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Python Application</h3>
-                      <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
-                        <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                          {`# Deploy a Python Flask app
-{
-  "app_name": "my-python-app",
-  "image": "python:3.9-slim",
-  "port": 5000,
-  "env_vars": {
-    "FLASK_ENV": "production",
-    "DATABASE_URL": "postgresql://..."
-  }
-}`}
-                        </pre>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-4 lg:p-6">
-                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Node.js Application</h3>
-                      <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
-                        <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                          {`# Deploy a Node.js Express app
-{
-  "app_name": "my-node-app",
-  "image": "node:16-alpine",
-  "port": 3000,
-  "env_vars": {
-    "NODE_ENV": "production",
-    "API_KEY": "your-api-key"
-  },
-  "replicas": 3
-}`}
-                        </pre>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-4 lg:p-6">
-                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Environment Variables Management</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">Update environment variables:</p>
-                          <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
-                            <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                              {`# Update specific environment variables
-PATCH /v1/deployments/{deployment_id}/env
-{
-  "env_vars": {
-    "DEBUG_MODE": "true",
-    "CACHE_TTL": "3600"
-  }
-}`}
-                            </pre>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">Restart deployment to apply changes:</p>
-                          <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
-                            <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                              {`# Perform rolling restart
-POST /v1/deployments/{deployment_id}/restart`}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Configuration */}
-                <section id="configuration" className="scroll-mt-8">
-                  <div className="flex items-center mb-4 lg:mb-6">
-                    <CogIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Configuration</h2>
-                  </div>
-
-                  <div className="space-y-4 lg:space-y-6">
-                    <div>
-                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Environment Variables</h3>
-                      <p className="text-gray-600 mb-3 lg:mb-4 text-sm lg:text-base">
-                        Configure your application using environment variables for maximum flexibility and security.
-                      </p>
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 lg:p-4">
-                        <p className="text-yellow-800 text-xs lg:text-sm">
-                          <strong>Security Note:</strong> Environment variables are encrypted at rest and in transit.
-                          Avoid storing sensitive data in plain text.
+                         <p className="text-center text-sm text-gray-600 mt-6">
+                            For detailed API calls, please see the <a href="#api-reference" className="text-blue-600 font-medium hover:underline">API Reference section</a>.
                         </p>
                       </div>
                     </div>
-
-                    <div>
-                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Health Checks</h3>
-                      <p className="text-gray-600 mb-3 lg:mb-4 text-sm lg:text-base">
-                        Configure custom health check endpoints to ensure your application is running correctly.
-                      </p>
-                      <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
-                        <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                          {`{
-  "health_check": {
-    "path": "/health",
-    "initial_delay_seconds": 30,
-    "period_seconds": 10,
-    "timeout_seconds": 5,
-    "failure_threshold": 3
-  }
-}`}
-                        </pre>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">Resource Limits</h3>
-                      <p className="text-gray-600 mb-3 lg:mb-4 text-sm lg:text-base">
-                        Set CPU and memory limits to ensure optimal performance and cost management.
-                      </p>
-                      <div className="bg-gray-900 rounded-lg p-3 lg:p-4">
-                        <pre className="text-green-400 text-xs lg:text-sm overflow-x-auto">
-                          {`{
-  "resources": {
-    "cpu": "500m",      // 0.5 CPU cores
-    "memory": "512Mi"   // 512 MB RAM
-  }
-}`}
-                        </pre>
-                      </div>
-                    </div>
                   </div>
                 </section>
-              </div>
+                
+                {/* Authentication Conceptual Guide */}
+                <section id="authentication" className="scroll-mt-16 sm:scroll-mt-20 lg:scroll-mt-24">
+                    <div className="flex items-center mb-4 lg:mb-6">
+                        <KeyIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Authentication</h2>
+                    </div>
+                    <div className="space-y-4 text-gray-700 text-sm sm:text-base leading-relaxed">
+                        <p>
+                            Access to the Container Engine API is controlled by API keys. You can manage these keys through your user dashboard after registering an account.
+                            All API requests must include an `Authorization` header with your API key.
+                        </p>
+                        <p>
+                            There are two main types of authentication:
+                        </p>
+                         <ul className="list-disc list-inside space-y-2 pl-4">
+                            <li><strong>User Account Authentication:</strong> To manage your account, billing, and API keys, you first need to <a href="#api-auth-register" className="text-blue-600 font-medium hover:underline">register</a> and <a href="#api-auth-login" className="text-blue-600 font-medium hover:underline">log in</a>. This process provides you with a JWT (JSON Web Token) that authenticates you for account-level actions, such as creating new API keys.</li>
+                            <li><strong>API Key Authentication:</strong> For all programmatic actions, such as deploying containers or managing services, you will use a generated API key. This key is a long-lived token that you should treat like a password. You include it in your requests as a Bearer token in the `Authorization` header.</li>
+                        </ul>
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-6 mt-4">
+                            <div className="flex items-start">
+                                <ShieldCheckIcon className="h-6 w-6 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+                                <div>
+                                <h4 className="font-bold text-amber-900 mb-2">Security Best Practices</h4>
+                                <ul className="text-amber-800 text-sm space-y-1 list-disc list-inside">
+                                    <li>Store API keys securely, preferably in an environment variable or secrets manager.</li>
+                                    <li>Use different API keys for different environments (e.g., development, production).</li>
+                                    <li>Rotate your API keys periodically to enhance security.</li>
+                                    <li>Never commit API keys directly into your version control system (like Git).</li>
+                                </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                {/* Deployment Guide Conceptual */}
+                <section id="deployment-guide" className="scroll-mt-16 sm:scroll-mt-20 lg:scroll-mt-24">
+                     <div className="flex items-center mb-4 lg:mb-6">
+                        <ServerIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Deployment Guide</h2>
+                    </div>
+                     <div className="space-y-4 text-gray-700 text-sm sm:text-base leading-relaxed">
+                        <p>
+                           Deploying an application on Container Engine involves providing a container image and some basic configuration. Our system handles the rest, from provisioning resources to networking and scaling.
+                        </p>
+                        <h4 className="text-lg font-bold text-gray-800 pt-2">Core Concepts</h4>
+                        <ul className="list-disc list-inside space-y-2 pl-4">
+                            <li><strong>Image:</strong> You must provide a publicly or privately accessible container image (e.g., from Docker Hub, GCR, or your own registry). This image contains your application and all its dependencies.</li>
+                            <li><strong>Replicas:</strong> This determines how many instances of your container are running. We automatically balance traffic between them for high availability. You can scale this number up or down at any time.</li>
+                            <li><strong>Ports:</strong> Specify which port your application listens on inside the container. We will automatically expose it to the internet via HTTP (80) and HTTPS (443).</li>
+                            <li><strong>Environment Variables:</strong> A secure way to provide configuration to your application without hardcoding it. You can manage these variables via the API. Any changes will trigger a zero-downtime rolling restart to apply them.</li>
+                            <li><strong>Domain:</strong> By default, we provide a `.decenter.run` subdomain for your application. You can also configure custom domains.</li>
+                        </ul>
+                         <p>
+                            To see the detailed API calls for creating and managing deployments, please refer to the <a href="#api-deployments" className="text-blue-600 font-medium hover:underline">Deployments API Reference</a>.
+                        </p>
+                    </div>
+                </section>
+
+                {/* Webhooks Conceptual Guide */}
+                <section id="webhooks" className="scroll-mt-16 sm:scroll-mt-20 lg:scroll-mt-24">
+                    <div className="flex items-center mb-4 lg:mb-6">
+                        <BellIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Webhooks</h2>
+                    </div>
+                    <div className="space-y-4 text-gray-700 text-sm sm:text-base leading-relaxed">
+                        <p>
+                            Webhooks allow you to receive real-time HTTP notifications about events happening with your deployments. You can subscribe to various events, such as when a deployment is created, fails, or successfully starts.
+                        </p>
+                        <p>
+                            To use webhooks, you provide a URL endpoint that we will send `POST` requests to. These requests will contain a JSON payload with details about the event. You can also provide an optional secret to verify that the requests are coming from Container Engine.
+                        </p>
+                        <h4 className="text-lg font-bold text-gray-800 pt-2">Available Events</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                           {[
+                                'deployment.created', 'deployment.updated', 'deployment.started',
+                                'deployment.stopped', 'deployment.failed', 'deployment.restarted'
+                           ].map(event => (
+                               <div key={event} className="flex items-center bg-blue-50 border border-blue-200/50 rounded-md px-3 py-1.5">
+                                 <code className="text-blue-800">{event}</code>
+                               </div>
+                           ))}
+                        </div>
+                         <p>
+                            For instructions on how to create and manage webhooks, see the <a href="#api-webhooks" className="text-blue-600 font-medium hover:underline">Webhooks API Reference</a>.
+                        </p>
+                    </div>
+                </section>
+
+                 {/* Configuration Section */}
+                <section id="configuration" className="scroll-mt-16 sm:scroll-mt-20 lg:scroll-mt-24">
+                  <div className="flex items-center mb-4 lg:mb-6">
+                    <CogIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mr-2 lg:mr-3" />
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">Advanced Configuration</h2>
+                  </div>
+                  <div className="space-y-6 text-gray-700 text-sm sm:text-base leading-relaxed">
+                    <div>
+                      <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-2">Health Checks</h3>
+                      <p>
+                        You can configure custom health check endpoints to ensure your application is running correctly. Container Engine will periodically send requests to this endpoint. If it fails to respond successfully a number of times, the container will be automatically restarted.
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-2">Resource Limits</h3>
+                      <p>
+                        To ensure optimal performance and manage costs, you can set specific CPU and memory limits for your deployments. This prevents a single application from consuming excessive resources and guarantees a baseline level of performance.
+                      </p>
+                    </div>
+                    <p>
+                        These options can be configured when creating or updating a deployment. Check the <a href="#api-deployments-create" className="text-blue-600 font-medium hover:underline">Create Deployment endpoint</a> in the API Reference for the full schema.
+                    </p>
+                  </div>
+                </section>
+                
+                {/* --- API REFERENCE --- */}
+<section id="api-reference" className="scroll-mt-16 sm:scroll-mt-20 lg:scroll-mt-24">
+  <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+    <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="flex items-center text-white">
+            <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl mr-3 sm:mr-4 flex-shrink-0">
+                <CodeBracketIcon className="h-6 w-6 sm:h-8 sm:w-8" />
+            </div>
+            <div className="min-w-0">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold mb-1 sm:mb-2 leading-tight">API Reference</h2>
+                <p className="text-gray-300 text-sm sm:text-base lg:text-lg leading-snug">Detailed endpoints for interacting with the Container Engine API.</p>
+            </div>
+        </div>
+    </div>
+
+    <div className="p-4 sm:p-6 lg:p-8 space-y-12">
+        {/* Base URL */}
+        <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Base URL</h3>
+            <code className="text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg text-sm break-all">
+                https://decenter.run/v1
+            </code>
+        </div>
+
+        {/* ================================================================== */}
+        {/* Authentication Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-authentication" className="space-y-8 scroll-mt-24">
+              <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Authentication</h3>
+              
+              {/* Register */}
+            <div id="api-auth-register" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Register User</h4>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /auth/register</span>
+                </div>
+                <p className="text-sm text-gray-600">Creates a new user account.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+              {/* Login */}
+            <div id="api-auth-login" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Login</h4>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /auth/login</span>
+                </div>
+                <p className="text-sm text-gray-600">Authenticates a user and returns JWT access and refresh tokens.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+            {/* Refresh Token */}
+            <div id="api-auth-refresh" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Refresh Access Token</h4>
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /auth/refresh</span>
+                </div>
+                <p className="text-sm text-gray-600">Uses a refresh token to issue a new access token.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X POST ...`, 'refresh')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'refresh' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X POST https://decenter.run/v1/auth/refresh \\
+-H "Content-Type: application/json" \\
+-d '{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}'`}</pre>
+                </div>
+            </div>
+
+            {/* Logout */}
+            <div id="api-auth-logout" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Logout</h4>
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /auth/logout</span>
+                </div>
+                <p className="text-sm text-gray-600">Invalidates the user's refresh token, effectively logging them out.</p>
+                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X POST ...`, 'logout')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'logout' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X POST https://decenter.run/v1/auth/logout \\
+-H "Content-Type: application/json" \\
+-d '{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}'`}</pre>
+                </div>
+            </div>
+        </div>
+
+        {/* ================================================================== */}
+        {/* API Keys Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-keys" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">API Keys</h3>
+             
+            {/* List API Keys */}
+            <div id="api-keys-list" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">List API Keys</h4>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /api-keys</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves a list of all API keys for the authenticated user.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'listkeys')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'listkeys' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET https://decenter.run/v1/api-keys \\
+-H "Authorization: Bearer <JWT_ACCESS_TOKEN>"`}</pre>
+                </div>
+            </div>
+
+            {/* Create API Key */}
+            <div id="api-keys-create" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Create API Key</h4>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /api-keys</span>
+                </div>
+                <p className="text-sm text-gray-600">Generates a new API key for programmatic access.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+            {/* Revoke API Key */}
+            <div id="api-keys-revoke" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Revoke API Key</h4>
+                  <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full whitespace-nowrap">DELETE /api-keys/{'{key_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Permanently deletes an API key.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X DELETE ...`, 'revokekey')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'revokekey' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X DELETE https://decenter.run/v1/api-keys/key_1a2b3c4d5e \\
+-H "Authorization: Bearer <JWT_ACCESS_TOKEN>"`}</pre>
+                </div>
+            </div>
+        </div>
+
+        {/* ================================================================== */}
+        {/* User Profile Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-user" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">User Profile</h3>
+             
+            {/* Get User Profile */}
+            <div id="api-user-get" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Get User Profile</h4>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /user/profile</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves the profile information of the authenticated user.</p>
+                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'getprofile')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'getprofile' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET https://decenter.run/v1/user/profile \\
+-H "Authorization: Bearer <JWT_ACCESS_TOKEN>"`}</pre>
+                </div>
+            </div>
+
+             {/* Update User Profile */}
+            <div id="api-user-update" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Update User Profile</h4>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">PUT /user/profile</span>
+                </div>
+                <p className="text-sm text-gray-600">Updates the profile information of the authenticated user.</p>
+                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X PUT ...`, 'updateprofile')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'updateprofile' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X PUT https://decenter.run/v1/user/profile \\
+-H "Authorization: Bearer <JWT_ACCESS_TOKEN>" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "username": "new_username",
+  "email": "new.email@example.com"
+}'`}</pre>
+                </div>
+            </div>
+
+            {/* Change Password */}
+            <div id="api-user-password" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Change Password</h4>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">PUT /user/password</span>
+                </div>
+                <p className="text-sm text-gray-600">Changes the password for the authenticated user.</p>
+                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X PUT ...`, 'changepass')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'changepass' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X PUT https://decenter.run/v1/user/password \\
+-H "Authorization: Bearer <JWT_ACCESS_TOKEN>" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "current_password": "MySecure123!",
+  "new_password": "ANewVerySecurePassword456!",
+  "confirm_new_password": "ANewVerySecurePassword456!"
+}'`}</pre>
+                </div>
+            </div>
+        </div>
+
+        {/* ================================================================== */}
+        {/* Deployments Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-deployments" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Deployments</h3>
+
+            {/* List Deployments */}
+            <div id="api-deployments-list" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">List Deployments</h4>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /deployments</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves a paginated list of all deployments for the authenticated user.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'listdeploy')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'listdeploy' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET "https://decenter.run/v1/deployments?page=1&limit=10" \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+            {/* Create Deployment */}
+            <div id="api-deployments-create" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Create Deployment</h4>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /deployments</span>
+                </div>
+                <p className="text-sm text-gray-600">Creates and starts a new deployment from a container image.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+            {/* Get Deployment Details */}
+            <div id="api-deployments-get" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Get Deployment Details</h4>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /deployments/{'{deployment_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves the full details of a specific deployment.</p>
+                {/* ... existing curl block for Get Deployment ... */}
+            </div>
+             
+            {/* Update Deployment */}
+            <div id="api-deployments-update" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Update Deployment</h4>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">PUT /deployments/{'{deployment_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Updates a deployment's configuration, such as its image or replica count. This triggers a redeployment.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X PUT ...`, 'updatedeploy')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'updatedeploy' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X PUT https://decenter.run/v1/deployments/dep_9f8e7d6c \\
+-H "Authorization: Bearer <YOUR_API_KEY>" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "image": "nginx:1.22-alpine",
+  "replicas": 3
+}'`}</pre>
+                </div>
+            </div>
+
+            {/* Delete Deployment */}
+            <div id="api-deployments-delete" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Delete Deployment</h4>
+                  <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full whitespace-nowrap">DELETE /deployments/{'{deployment_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Stops and permanently deletes a deployment and all associated resources.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X DELETE ...`, 'deletedeploy')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'deletedeploy' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X DELETE https://decenter.run/v1/deployments/dep_9f8e7d6c \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+            {/* Scale Deployment */}
+            <div id="api-deployments-scale" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Scale Deployment</h4>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">PATCH /deployments/{'{deployment_id}'}/scale</span>
+                </div>
+                <p className="text-sm text-gray-600">Adjusts the number of running instances (replicas) for a deployment.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X PATCH ...`, 'scaledeploy')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'scaledeploy' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X PATCH https://decenter.run/v1/deployments/dep_9f8e7d6c/scale \\
+-H "Authorization: Bearer <YOUR_API_KEY>" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "replicas": 5
+}'`}</pre>
+                </div>
+            </div>
+
+            {/* Start Deployment */}
+            <div id="api-deployments-start" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Start Deployment</h4>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /deployments/{'{deployment_id}'}/start</span>
+                </div>
+                <p className="text-sm text-gray-600">Starts a stopped deployment.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X POST ...`, 'startdeploy')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'startdeploy' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c/start \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+             {/* Stop Deployment */}
+            <div id="api-deployments-stop" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Stop Deployment</h4>
+                  <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /deployments/{'{deployment_id}'}/stop</span>
+                </div>
+                <p className="text-sm text-gray-600">Stops a running deployment by scaling it down to zero replicas.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X POST ...`, 'stopdeploy')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'stopdeploy' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c/stop \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+             
+            {/* Restart Deployment */}
+            <div id="api-deployments-restart" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Restart Deployment</h4>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /deployments/{'{deployment_id}'}/restart</span>
+                </div>
+                <p className="text-sm text-gray-600">Initiates a zero-downtime rolling restart for a deployment.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+        </div>
+
+        {/* ================================================================== */}
+        {/* Environment Variables Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-env" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Environment Variables</h3>
+             
+            {/* Get Environment Variables */}
+            <div id="api-env-get" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Get Environment Variables</h4>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /deployments/{'{deployment_id}'}/env</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves all environment variables for a specific deployment.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+            {/* Update Environment Variables */}
+            <div id="api-env-update" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Update Environment Variables</h4>
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">PATCH /deployments/{'{deployment_id}'}/env</span>
+                </div>
+                <p className="text-sm text-gray-600">Adds or updates environment variables for a deployment. This triggers a zero-downtime restart to apply the changes.</p>
+                {/* ... existing curl block ... */}
+            </div>
+        </div>
+        
+        {/* ================================================================== */}
+        {/* Domains Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-domains" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Custom Domains</h3>
+
+            {/* List Domains */}
+            <div id="api-domains-list" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">List Custom Domains</h4>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /deployments/{'{deployment_id}'}/domains</span>
+                </div>
+                <p className="text-sm text-gray-600">Lists all custom domains associated with a deployment.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'listdomains')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'listdomains' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET https://decenter.run/v1/deployments/dep_9f8e7d6c/domains \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+            {/* Add Domain */}
+            <div id="api-domains-add" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Add Custom Domain</h4>
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /deployments/{'{deployment_id}'}/domains</span>
+                </div>
+                <p className="text-sm text-gray-600">Adds a custom domain to a deployment and begins the verification process. Returns the necessary DNS records for configuration.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X POST ...`, 'adddomain')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'adddomain' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X POST https://decenter.run/v1/deployments/dep_9f8e7d6c/domains \\
+-H "Authorization: Bearer <YOUR_API_KEY>" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "domain": "www.my-awesome-app.com"
+}'`}</pre>
+                </div>
+            </div>
+
+            {/* Remove Domain */}
+            <div id="api-domains-remove" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Remove Custom Domain</h4>
+                    <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full whitespace-nowrap">DELETE /deployments/{'{deployment_id}'}/domains/{'{domain_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Removes a custom domain from a deployment.</p>
+                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X DELETE ...`, 'removedomain')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'removedomain' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X DELETE https://decenter.run/v1/deployments/dep_9f8e7d6c/domains/dom_12345678 \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+        </div>
+        
+        {/* ================================================================== */}
+        {/* Logs Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-logs" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Logs</h3>
+
+            {/* Get Logs */}
+            <div id="api-logs-get" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Get Deployment Logs</h4>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /deployments/{'{deployment_id}'}/logs</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves historical logs for all pods in a deployment.</p>
+                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'getlogs')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'getlogs' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET "https://decenter.run/v1/deployments/dep_9f8e7d6c/logs?limit=100" \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+            {/* Stream Logs */}
+            <div id="api-logs-stream" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xl font-semibold text-gray-800">Stream Deployment Logs</h4>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /deployments/{'{deployment_id}'}/logs/stream</span>
+                </div>
+                <p className="text-sm text-gray-600">Establishes a WebSocket connection to stream real-time logs from a deployment.</p>
+            </div>
+        </div>
+
+        {/* ================================================================== */}
+        {/* Webhooks Endpoints */}
+        {/* ================================================================== */}
+        <div id="api-webhooks" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Webhooks</h3>
+             
+            {/* List Webhooks */}
+            <div id="api-webhooks-list" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">List Webhooks</h4>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /webhooks</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves a list of all webhooks configured for the user.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'listwebhooks')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'listwebhooks' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET https://decenter.run/v1/webhooks \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+            {/* Create Webhook */}
+            <div id="api-webhooks-create" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Create Webhook</h4>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full whitespace-nowrap">POST /webhooks</span>
+                </div>
+                <p className="text-sm text-gray-600">Creates a new webhook endpoint to receive notifications for deployment events.</p>
+                {/* ... existing curl block ... */}
+            </div>
+
+            {/* Get Webhook */}
+            <div id="api-webhooks-get" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Get Webhook Details</h4>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /webhooks/{'{webhook_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Retrieves the details of a specific webhook.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X GET ...`, 'getwebhook')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'getwebhook' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X GET https://decenter.run/v1/webhooks/wh_1a2b3c4d \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+
+            {/* Update Webhook */}
+            <div id="api-webhooks-update" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Update Webhook</h4>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-semibold rounded-full whitespace-nowrap">PUT /webhooks/{'{webhook_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Updates a webhook's configuration, such as its URL or subscribed events.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X PUT ...`, 'updatewebhook')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'updatewebhook' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X PUT https://decenter.run/v1/webhooks/wh_1a2b3c4d \\
+-H "Authorization: Bearer <YOUR_API_KEY>" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "url": "https://new-app.com/webhook",
+  "events": ["deployment.started", "deployment.stopped"],
+  "active": false
+}'`}</pre>
+                </div>
+            </div>
+
+            {/* Delete Webhook */}
+            <div id="api-webhooks-delete" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">Delete Webhook</h4>
+                  <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full whitespace-nowrap">DELETE /webhooks/{'{webhook_id}'}</span>
+                </div>
+                <p className="text-sm text-gray-600">Deletes a webhook.</p>
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between p-4 bg-gray-800/50">
+                        <span className="text-gray-300 text-sm font-medium">cURL Request</span>
+                        <button onClick={() => copyToClipboard(`curl -X DELETE ...`, 'deletewebhook')} className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">{copiedSection === 'deletewebhook' ? <><CheckIcon className="h-4 w-4 text-green-400" /><span>Copied!</span></> : <><ClipboardDocumentIcon className="h-4 w-4" /><span>Copy</span></>}</button>
+                    </div>
+                    <pre className="p-4 text-green-400 text-sm overflow-x-auto">{`curl -X DELETE https://decenter.run/v1/webhooks/wh_1a2b3c4d \\
+-H "Authorization: Bearer <YOUR_API_KEY>"`}</pre>
+                </div>
+            </div>
+        </div>
+
+        {/* ================================================================== */}
+        {/* Notifications Endpoint */}
+        {/* ================================================================== */}
+        <div id="api-notifications" className="space-y-8 scroll-mt-24">
+             <h3 className="text-2xl font-bold text-gray-900 border-b pb-3">Real-time Notifications</h3>
+             
+            {/* WebSocket Notifications */}
+            <div id="api-notifications-ws" className="space-y-4 scroll-mt-24">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xl font-semibold text-gray-800">WebSocket Notifications</h4>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full whitespace-nowrap">GET /ws/notifications</span>
+                </div>
+                <p className="text-sm text-gray-600">Establishes a WebSocket connection to receive real-time notifications about events related to your account and deployments.</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <h5 className="font-bold text-blue-900 mb-2">Connection URL</h5>
+                    <pre className="text-blue-800 text-sm overflow-x-auto">wss://decenter.run/v1/ws/notifications</pre>
+                    <p className="text-blue-800 text-sm mt-2">
+                        <strong>Note:</strong> You must include your JWT access token as a query parameter for authentication, like so: `?token={'{jwt_access_token}'}`.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+</section>
+
             </div>
           </div>
         </div>
+      </div>
 
       {/* Modern Footer */}
       <footer className="relative mt-20">

@@ -50,7 +50,6 @@ pub async fn create_deployment(
     );
 
     // Convert optional fields to JSON
-    let env_vars_for_job = payload.env_vars.clone();
     let env_vars_value = payload.env_vars.unwrap_or_default();
     let env_vars_json = serde_json::to_value(&env_vars_value)?;
     let resources = Some(serde_json::to_value(payload.resources.unwrap_or_default())?);
@@ -58,7 +57,6 @@ pub async fn create_deployment(
         .health_check
         .map(|hc| serde_json::to_value(hc))
         .transpose()?;
-
     sqlx::query!(
         r#"
             INSERT INTO deployments (
@@ -86,6 +84,8 @@ pub async fn create_deployment(
     )
     .execute(&state.db.pool)
     .await?;
+    
+
     // TODO: Implement Kubernetes deployment logic here
     let job = DeploymentJob::new(
         deployment_id,
@@ -93,7 +93,7 @@ pub async fn create_deployment(
         payload.app_name.clone(),
         payload.image.clone(),
         payload.port,
-        env_vars_for_job,
+        Some(env_vars_value), // Pass the actual HashMap instead of Option
         payload.replicas,
         resources,
         health_check,
