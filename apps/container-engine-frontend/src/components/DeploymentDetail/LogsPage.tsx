@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ClipboardDocumentListIcon, CubeIcon } from "@heroicons/react/24/outline";
 import { useParams } from 'react-router-dom';
 import api from '../../api/api';
+import { shouldRetryContainerError, getContainerErrorMessage, analyzeContainerError } from '../../utils/errorHandlers';
 
 export default function LogsPage() {
   const { deploymentId } = useParams();
@@ -108,24 +109,20 @@ export default function LogsPage() {
         setError('Authentication failed. Please login again.');
       } else if (err?.response?.status === 404) {
         setError('Deployment not found or no logs available.');
-      } else if (err?.response?.status === 400 && err?.response?.data?.message?.includes('ContainerCreating')) {
-        if (retryCount < 10) {
-          setError(`Container is starting up... (Retry ${retryCount + 1}/10)`);
-          setTimeout(() => loadHistoricalLogs(retryCount + 1), 3000);
-          return;
-        } else {
-          setError('Container is taking longer than expected to start. Please refresh manually.');
-        }
-      } else if (err?.response?.status === 400 && err?.response?.data?.message?.includes('waiting to start')) {
-        if (retryCount < 10) {
-          setError(`Container is being created... (Retry ${retryCount + 1}/10)`);
-          setTimeout(() => loadHistoricalLogs(retryCount + 1), 3000);
-          return;
-        } else {
-          setError('Container is taking longer than expected to start. Please refresh manually.');
-        }
+      } else if (shouldRetryContainerError(err, retryCount, 15)) {
+        const errorMessage = getContainerErrorMessage(err, retryCount, 15);
+        const analysis = analyzeContainerError(err);
+        
+        setError(errorMessage);
+        setTimeout(() => loadHistoricalLogs(retryCount + 1), analysis.retryDelay || 4000);
+        return;
       } else {
-        setError('Failed to load log history');
+        const analysis = analyzeContainerError(err);
+        if (analysis.isContainerError) {
+          setError(getContainerErrorMessage(err, retryCount, 15));
+        } else {
+          setError('Failed to load log history');
+        }
       }
     } finally {
       setIsLoadingHistory(false);
