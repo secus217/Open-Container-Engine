@@ -131,13 +131,7 @@ const DeploymentDetailPage: React.FC = () => {
       setEnvVars(envRes.data.env_vars || {});
       setError(null);
     } catch (err: any) {
-      // Handle container creation errors more gracefully
-      const analysis = analyzeContainerError(err);
-      if (analysis.isContainerError) {
-        setError('Deployment is starting up. Logs may not be available yet - this is normal for new deployments.');
-      } else {
-        setError(err.response?.data?.error?.message || err.response?.data?.message || 'Failed to fetch deployment details.');
-      }
+        console.log(err);
     } finally {
       setLoading(false);
     }
