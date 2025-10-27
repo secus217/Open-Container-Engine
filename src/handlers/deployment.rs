@@ -10,7 +10,7 @@ use uuid::Uuid;
 use validator::Validate;
 use crate::jobs::deployment_job::DeploymentJob;
 use crate::services::domain_validator::DomainValidator;
-use crate::services::ssl_certificate_manager::{SslCertificateManager, CertificateRequest, ChallengeType};
+// SSL certificate management is now simplified
 
 use crate::{
     auth::AuthUser, 
@@ -806,27 +806,35 @@ pub async fn add_domain(
         return Err(AppError::conflict("Domain already exists"));
     }
 
-    // Initialize domain validator
+    // Initialize domain validator to check format
     let domain_validator = DomainValidator::new()?;
-
-    // Validate domain format
     domain_validator.validate_domain_format(&payload.domain)?;
 
-    // Get ingress endpoint for DNS records
+    // Get node IP for DNS configuration
     let k8s_service = KubernetesService::for_deployment(&deployment_id, &user.user_id).await?;
-    let ingress_endpoint = k8s_service.get_ingress_endpoint().await?;
+    let node_ip = match k8s_service.get_node_ip().await {
+        Ok(ip) => ip,
+        Err(_) => {
+            // Fallback to ingress endpoint if node IP not available
+            k8s_service.get_ingress_endpoint().await.unwrap_or_else(|_| "127.0.0.1".to_string())
+        }
+    };
 
-    // Generate required DNS records
-    let validator_dns_records = domain_validator.generate_required_dns_records(&payload.domain, &ingress_endpoint);
-    let dns_records: Vec<crate::deployment::models::DnsRecord> = validator_dns_records
-        .into_iter()
-        .map(|record| crate::deployment::models::DnsRecord {
-            record_type: record.record_type,
-            name: record.name,
-            value: record.value,
-            ttl: record.ttl,
-        })
-        .collect();
+    // Create simple DNS records that user needs to create
+    let dns_records = vec![
+        crate::deployment::models::DnsRecord {
+            record_type: "A".to_string(),
+            name: payload.domain.clone(),
+            value: node_ip.clone(),
+            ttl: 300,
+        },
+        crate::deployment::models::DnsRecord {
+            record_type: "CNAME".to_string(),
+            name: format!("www.{}", payload.domain),
+            value: payload.domain.clone(),
+            ttl: 300,
+        },
+    ];
 
     // Insert domain into database
     let domain_id = Uuid::new_v4();
@@ -835,7 +843,7 @@ pub async fn add_domain(
     sqlx::query!(
         r#"
         INSERT INTO domains (id, deployment_id, domain, status, created_at)
-        VALUES ($1, $2, $3, 'pending', $4)
+        VALUES ($1, $2, $3, 'configured', $4)
         "#,
         domain_id,
         deployment_id,
@@ -845,7 +853,7 @@ pub async fn add_domain(
     .execute(&state.db.pool)
     .await?;
 
-    // Insert DNS records
+    // Insert DNS records for reference
     for record in &dns_records {
         sqlx::query!(
             r#"
@@ -863,39 +871,46 @@ pub async fn add_domain(
         .await?;
     }
 
-    // Start domain validation process in background
-    let domain_clone = payload.domain.clone();
-    let user_id = user.user_id;
-    let state_clone = state.clone();
-    
-    tokio::spawn(async move {
-        let state_ref = &state_clone;
-        if let Err(e) = validate_and_provision_ssl(
-            state_clone.clone(),
-            domain_id,
-            domain_clone,
-            user_id,
-            deployment_id,
-        ).await {
-            error!("Failed to validate domain and provision SSL: {}", e);
-            
-            // Update domain status to failed
+    // Create Kubernetes Ingress for the custom domain (without SSL for now)
+    match k8s_service.create_custom_domain_ingress_simple(&deployment_id, &payload.domain).await {
+        Ok(_) => {
+            info!("Successfully created Kubernetes ingress for domain: {}", payload.domain);
+        }
+        Err(e) => {
+            warn!("Failed to create Kubernetes ingress for domain {}: {}", payload.domain, e);
+            // Update domain status to failed in database
             let _ = sqlx::query!(
-                "UPDATE domains SET status = 'failed', error_message = $1 WHERE id = $2",
-                e.to_string(),
+                "UPDATE domains SET status = 'failed' WHERE id = $1",
                 domain_id
             )
-            .execute(&state_ref.db.pool)
+            .execute(&state.db.pool)
             .await;
+            
+            return Err(AppError::internal(&format!("Failed to create ingress: {}", e)));
         }
-    });
+    }
+
+    // Create instructions for user
+    let instructions = format!(
+        "Please create the following DNS records at your domain provider:\n\
+        1. A Record: {} -> {}\n\
+        2. CNAME Record: www.{} -> {}\n\
+        \nAfter creating these records, your domain will point to your application. \
+        DNS propagation may take up to 48 hours.\n\
+        \nKubernetes ingress has been configured to route traffic to your application.",
+        payload.domain, node_ip, payload.domain, payload.domain
+    );
+
+    info!("Domain {} added for deployment {} with node IP: {}", payload.domain, deployment_id, node_ip);
 
     Ok(Json(DomainResponse {
         id: domain_id,
         domain: payload.domain,
-        status: "pending".to_string(),
+        status: "configured".to_string(),
         created_at: now,
         dns_records,
+        node_ip,
+        instructions,
     }))
 }
 
@@ -962,124 +977,35 @@ pub async fn remove_domain(
     })))
 }
 
-/// Helper function to validate domain and provision SSL certificate
-async fn validate_and_provision_ssl(
-    state: AppState,
-    domain_id: Uuid,
-    domain: String,
-    user_id: Uuid,
-    deployment_id: Uuid,
-) -> Result<(), AppError> {
-    info!("Starting domain validation and SSL provisioning for: {}", domain);
+// SSL certificate provisioning is now handled separately by the user
+// This simplified approach just provides the node IP for DNS configuration
 
-    // Initialize services
-    let domain_validator = DomainValidator::new()?;
-    let ssl_manager = SslCertificateManager::new(
-        format!("/tmp/ssl-certs/{}", user_id),
-        true, // Use staging for development
-    ).await?;
-
-    // Step 1: Update domain status to validating
-    sqlx::query!(
-        "UPDATE domains SET status = 'validating' WHERE id = $1",
-        domain_id
+pub async fn get_node_ip(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(deployment_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    // Check if deployment exists and belongs to user
+    let _deployment = sqlx::query!(
+        "SELECT id FROM deployments WHERE id = $1 AND user_id = $2",
+        deployment_id,
+        user.user_id
     )
-    .execute(&state.db.pool)
-    .await?;
+    .fetch_optional(&state.db.pool)
+    .await?
+    .ok_or_else(|| AppError::not_found("Deployment"))?;
 
-    // Step 2: Request SSL certificate and get validation challenge
-    let cert_request = CertificateRequest {
-        domain: domain.clone(),
-        email: "ssl@example.com".to_string(), // This should come from user settings
-        challenge_type: ChallengeType::Dns,
+    // Get node IP for DNS configuration
+    let k8s_service = KubernetesService::for_deployment(&deployment_id, &user.user_id).await?;
+    let node_ip = match k8s_service.get_node_ip().await {
+        Ok(ip) => ip,
+        Err(_) => {
+            // Fallback to ingress endpoint if node IP not available
+            k8s_service.get_ingress_endpoint().await.unwrap_or_else(|_| "127.0.0.1".to_string())
+        }
     };
 
-    let validation_challenge = ssl_manager.request_certificate(cert_request).await?;
-
-    // Step 3: Store DNS validation record
-    if let Some(dns_record) = &validation_challenge.dns_record {
-        sqlx::query!(
-            r#"
-            INSERT INTO dns_records (id, domain_id, record_type, record_name, record_value, ttl, is_validation_record)
-            VALUES ($1, $2, $3, $4, $5, $6, true)
-            "#,
-            Uuid::new_v4(),
-            domain_id,
-            dns_record.record_type,
-            dns_record.name,
-            dns_record.value,
-            dns_record.ttl as i32
-        )
-        .execute(&state.db.pool)
-        .await?;
-    }
-
-    // Step 4: Wait for DNS propagation and validate
-    let is_validated = domain_validator
-        .wait_for_dns_propagation(
-            &domain,
-            &validation_challenge.key_authorization,
-            10, // max retries
-        )
-        .await?;
-
-    if !is_validated {
-        return Err(AppError::internal("Domain validation failed - DNS not propagated"));
-    }
-
-    // Step 5: Complete SSL certificate issuance
-    let certificate_info = ssl_manager
-        .complete_certificate_validation(&domain, "ssl@example.com")
-        .await?;
-
-    // Step 6: Create Kubernetes secret for SSL certificate
-    let k8s_service = KubernetesService::for_deployment(&deployment_id, &user_id).await?;
-    let secret_name = format!("ssl-{}", domain_id);
-
-    k8s_service
-        .create_ssl_certificate_secret(
-            &secret_name,
-            &certificate_info.certificate_pem,
-            &certificate_info.private_key_pem,
-        )
-        .await?;
-
-    // Step 7: Create custom domain ingress with SSL
-    k8s_service
-        .create_custom_domain_ingress(&deployment_id, &domain, &secret_name)
-        .await?;
-
-    // Step 8: Store SSL certificate in database
-    sqlx::query!(
-        r#"
-        INSERT INTO ssl_certificates (id, domain_id, certificate_pem, private_key_pem, issued_at, expires_at, issuer, status, auto_renew)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', true)
-        "#,
-        certificate_info.id,
-        domain_id,
-        certificate_info.certificate_pem,
-        certificate_info.private_key_pem,
-        certificate_info.issued_at,
-        certificate_info.expires_at,
-        certificate_info.issuer
-    )
-    .execute(&state.db.pool)
-    .await?;
-
-    // Step 9: Update domain status to verified
-    sqlx::query!(
-        r#"
-        UPDATE domains 
-        SET status = 'verified', verified_at = NOW(), ssl_status = 'issued', ssl_issued_at = $1, ssl_expires_at = $2
-        WHERE id = $3
-        "#,
-        certificate_info.issued_at,
-        certificate_info.expires_at,
-        domain_id
-    )
-    .execute(&state.db.pool)
-    .await?;
-
-    info!("Successfully validated domain and provisioned SSL: {}", domain);
-    Ok(())
+    Ok(Json(serde_json::json!({
+        "node_ip": node_ip
+    })))
 }

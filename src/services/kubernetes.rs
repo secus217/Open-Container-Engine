@@ -1473,6 +1473,106 @@ pub async fn get_deployment_logs_merged(
     Ok(all_logs.join("\n"))
 }
 
+    /// Create ingress for custom domain without SSL (simplified version)
+    pub async fn create_custom_domain_ingress_simple(
+        &self,
+        deployment_id: &Uuid,
+        domain: &str,
+    ) -> Result<(), AppError> {
+        use k8s_openapi::api::networking::v1::{
+            Ingress, IngressSpec, IngressRule, IngressBackend, IngressServiceBackend,
+            ServiceBackendPort, HTTPIngressRuleValue, HTTPIngressPath
+        };
+        use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
+        use std::collections::BTreeMap;
+
+        let ingress_name = format!("custom-{}", self.generate_ingress_name(deployment_id));
+        let service_name = self.generate_service_name(deployment_id);
+
+        // Get the service to determine the port
+        let services: Api<Service> = Api::namespaced(self.client.clone(), &self.namespace);
+        let service = services
+            .get(&service_name)
+            .await
+            .map_err(|e| AppError::internal(&format!("Failed to get service: {}", e)))?;
+
+        let port = service
+            .spec
+            .as_ref()
+            .and_then(|spec| spec.ports.as_ref())
+            .and_then(|ports| ports.first())
+            .map(|port| port.port)
+            .unwrap_or(80);
+
+        // Create ingress rule for the custom domain
+        let ingress_rule = IngressRule {
+            host: Some(domain.to_string()),
+            http: Some(HTTPIngressRuleValue {
+                paths: vec![HTTPIngressPath {
+                    path: Some("/".to_string()),
+                    path_type: "Prefix".to_string(),
+                    backend: IngressBackend {
+                        service: Some(IngressServiceBackend {
+                            name: service_name.clone(),
+                            port: Some(ServiceBackendPort {
+                                number: Some(port),
+                                ..Default::default()
+                            }),
+                        }),
+                        ..Default::default()
+                    },
+                }],
+            }),
+        };
+
+        // Create ingress spec
+        let ingress_spec = IngressSpec {
+            rules: Some(vec![ingress_rule]),
+            ..Default::default()
+        };
+
+        // Create labels
+        let mut labels = BTreeMap::new();
+        labels.insert("app".to_string(), format!("deployment-{}", deployment_id));
+        labels.insert("domain".to_string(), domain.to_string());
+        labels.insert("managed-by".to_string(), "container-engine".to_string());
+
+        // Create ingress object
+        let ingress = Ingress {
+            metadata: ObjectMeta {
+                name: Some(ingress_name.clone()),
+                namespace: Some(self.namespace.clone()),
+                labels: Some(labels),
+                ..Default::default()
+            },
+            spec: Some(ingress_spec),
+            ..Default::default()
+        };
+
+        // Apply the ingress
+        let ingresses: Api<Ingress> = Api::namespaced(self.client.clone(), &self.namespace);
+        
+        match ingresses.get(&ingress_name).await {
+            Ok(_) => {
+                // Update existing ingress
+                ingresses
+                    .replace(&ingress_name, &PostParams::default(), &ingress)
+                    .await
+                    .map_err(|e| AppError::internal(&format!("Failed to update ingress: {}", e)))?;
+            }
+            Err(_) => {
+                // Create new ingress
+                ingresses
+                    .create(&PostParams::default(), &ingress)
+                    .await
+                    .map_err(|e| AppError::internal(&format!("Failed to create ingress: {}", e)))?;
+            }
+        }
+
+        info!("Successfully created/updated ingress for domain: {}", domain);
+        Ok(())
+    }
+
     /// Create or update ingress for custom domain with SSL certificate
     pub async fn create_custom_domain_ingress(
         &self,
@@ -1668,6 +1768,40 @@ pub async fn get_deployment_logs_merged(
                 }
             }
         }
+    }
+
+    /// Get node IP for external DNS configuration
+    pub async fn get_node_ip(&self) -> Result<String, AppError> {
+        use k8s_openapi::api::core::v1::Node;
+
+        // Get all nodes
+        let nodes: Api<Node> = Api::all(self.client.clone());
+        let node_list = nodes.list(&Default::default()).await
+            .map_err(|e| AppError::internal(&format!("Failed to list nodes: {}", e)))?;
+
+        // Try to find external IP from any node
+        for node in node_list.items {
+            if let Some(status) = node.status {
+                if let Some(ref addresses) = status.addresses {
+                    // Look for ExternalIP first
+                    for addr in addresses {
+                        if addr.type_ == "ExternalIP" {
+                            return Ok(addr.address.clone());
+                        }
+                    }
+                    // If no ExternalIP found, use InternalIP as fallback
+                    for addr in addresses {
+                        if addr.type_ == "InternalIP" {
+                            return Ok(addr.address.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        // If no node IPs found, fallback to ingress endpoint
+        warn!("No node IPs found, falling back to ingress endpoint");
+        self.get_ingress_endpoint().await
     }
 
     /// Get ingress IP or hostname for DNS configuration

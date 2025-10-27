@@ -54,6 +54,12 @@ impl DeploymentWorker {
                         )
                         .await
                         {
+                            self.call_user_webhooks(
+                        job.user_id,
+                        crate::user::webhook_models::WebhookEvent::DeploymentFailed,
+                        &job,
+                    )
+                    .await;
                             error!("Failed to update deployment status: {}", e);
                         }
                         continue;

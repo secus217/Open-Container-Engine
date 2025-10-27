@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE domains SET status = 'validating' WHERE id = $1",
+  "query": "UPDATE domains SET status = 'failed' WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "4e442c26827cf3829e2337446f28e2c16911bd221f5151f376aeaf32d61b6595"
+  "hash": "5b6879e3a8df61a893bd23d556da137694fc8a0d8fcb88b857c8216d2276081b"
 }

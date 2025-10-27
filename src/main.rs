@@ -388,6 +388,10 @@ fn create_app(state: AppState) -> Router {
             axum::routing::delete(handlers::deployment::remove_domain),
         )
         .route(
+            "/v1/deployments/:deployment_id/node-ip",
+            get(handlers::deployment::get_node_ip),
+        )
+        .route(
             "/v1/deployments/:deployment_id/logs/stream",
             get(handlers::logs::ws_logs_handler),
         )

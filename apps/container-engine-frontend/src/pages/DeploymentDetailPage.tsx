@@ -67,9 +67,16 @@ interface DomainItem {
   ssl_expires_at?: string;
 }
 
+interface AddDomainResponse {
+  domain: string;
+  node_ip: string;
+  instructions: string;
+  message: string;
+}
+
 const DeploymentDetailPage: React.FC = () => {
   const { deploymentId } = useParams<{ deploymentId: string }>();
-  const domainComingSoon = true; // Set to true to hide Domains tab for now
+  const domainComingSoon = false; // Enable Domains tab functionality
   const navigate = useNavigate();
   const [deployment, setDeployment] = useState<DeploymentDetails | null>(null);
   const [logs, setLogs] = useState<DeploymentLogs[]>([]);
@@ -480,6 +487,8 @@ const DeploymentDetailPage: React.FC = () => {
     const [addingDomain, setAddingDomain] = useState(false);
     const [newDomain, setNewDomain] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
+    const [lastAddedDomain, setLastAddedDomain] = useState<AddDomainResponse | null>(null);
+    const [nodeIp, setNodeIp] = useState<string>('');
 
     const fetchDomains = useCallback(async () => {
       if (!deploymentId) return;
@@ -495,8 +504,20 @@ const DeploymentDetailPage: React.FC = () => {
       }
     }, [deploymentId]);
 
+    const fetchNodeIp = useCallback(async () => {
+      if (!deploymentId) return;
+      try {
+        const response = await api.get(`/v1/deployments/${deploymentId}/node-ip`);
+        setNodeIp(response.data.node_ip || '');
+      } catch (err: any) {
+        console.error('Failed to fetch node IP:', err);
+        setNodeIp('');
+      }
+    }, [deploymentId]);
+
     useEffect(() => {
       fetchDomains();
+      fetchNodeIp();
 
       // Poll for domain status updates every 10 seconds
       const pollInterval = setInterval(() => {
@@ -504,17 +525,22 @@ const DeploymentDetailPage: React.FC = () => {
       }, 10000);
 
       return () => clearInterval(pollInterval);
-    }, [fetchDomains]);
+    }, [fetchDomains, fetchNodeIp]);
 
     const handleAddDomain = async () => {
       if (!newDomain.trim() || !deploymentId) return;
 
       try {
         setAddingDomain(true);
-        await api.post(`/v1/deployments/${deploymentId}/domains`, {
+        const response = await api.post(`/v1/deployments/${deploymentId}/domains`, {
           domain: newDomain.trim()
         });
-        showToast('Domain added successfully! SSL certificate provisioning will begin shortly.', 'success');
+        
+        // Store the response data for showing DNS instructions
+        const domainData: AddDomainResponse = response.data;
+        setLastAddedDomain(domainData);
+        
+        showToast(`Domain added successfully! Node IP: ${domainData.node_ip}`, 'success');
         setNewDomain('');
         setShowAddForm(false);
         fetchDomains();
@@ -720,11 +746,11 @@ const DeploymentDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {deployment && (
+          {deployment && !lastAddedDomain && (
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">DNS Configuration Required</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">DNS Configuration Instructions</h4>
               <p className="text-sm text-blue-700 mb-2">
-                Add these DNS records to your domain provider (GoDaddy, Namecheap, Cloudflare, etc.):
+                To connect your custom domain, add these DNS records at your domain provider:
               </p>
               <div className="space-y-3">
                 <div className="bg-white p-3 rounded border">
@@ -732,7 +758,16 @@ const DeploymentDetailPage: React.FC = () => {
                   <div className="text-sm font-mono space-y-1 break-words">
                     <div>Type: <span className="text-blue-600">A</span></div>
                     <div>Name: <span className="text-blue-600">@</span> (or leave blank)</div>
-                    <div>Value: <span className="text-green-600">Get IP from: {deployment.url.replace('https://', '').replace('http://', '')}</span></div>
+                    <div>Value: <span className="text-green-600 font-bold">{nodeIp || 'Loading...'}</span>
+                      {nodeIp && (
+                        <button
+                          onClick={() => copyToClipboard(nodeIp, 'Node IP')}
+                          className="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded transition-all"
+                        >
+                          <ClipboardDocumentListIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                     <div>TTL: <span className="text-blue-600">300</span></div>
                   </div>
                 </div>
@@ -746,11 +781,59 @@ const DeploymentDetailPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-3 p-2 bg-yellow-100 rounded border border-yellow-300">
-                <p className="text-xs text-yellow-800 break-words">
-                  💡 <strong>Tip:</strong> Use <code>nslookup {deployment.url.replace('https://', '').replace('http://', '')}</code> to get the IP address
+              <div className="mt-3 p-2 bg-green-100 rounded border border-green-300">
+                <p className="text-xs text-green-800 break-words">
+                  ✅ <strong>Node IP Available:</strong> {nodeIp || 'Loading...'} - Use this IP address for your A record.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* DNS Instructions - Show after domain is added */}
+          {lastAddedDomain && (
+            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+              <h4 className="font-semibold text-green-900 mb-2">🎉 Domain Added Successfully!</h4>
+              <p className="text-sm text-green-700 mb-3">
+                <strong>{lastAddedDomain.domain}</strong> has been configured. Now add these DNS records to your domain provider:
+              </p>
+              <div className="space-y-3">
+                <div className="bg-white p-3 rounded border border-green-300">
+                  <div className="text-sm font-semibold text-gray-700 mb-1">A Record (Root Domain):</div>
+                  <div className="text-sm font-mono space-y-1 break-words">
+                    <div>Type: <span className="text-blue-600">A</span></div>
+                    <div>Name: <span className="text-blue-600">@</span> (or leave blank)</div>
+                    <div>Value: <span className="text-green-600 font-bold">{lastAddedDomain.node_ip}</span> 
+                      <button
+                        onClick={() => copyToClipboard(lastAddedDomain.node_ip, 'Node IP')}
+                        className="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded transition-all"
+                      >
+                        <ClipboardDocumentListIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div>TTL: <span className="text-blue-600">300</span></div>
+                  </div>
+                </div>
+                <div className="bg-white p-3 rounded border border-green-300">
+                  <div className="text-sm font-semibold text-gray-700 mb-1">CNAME Record (WWW Subdomain):</div>
+                  <div className="text-sm font-mono space-y-1 break-words">
+                    <div>Type: <span className="text-blue-600">CNAME</span></div>
+                    <div>Name: <span className="text-blue-600">www</span></div>
+                    <div>Value: <span className="text-green-600">{lastAddedDomain.domain}</span></div>
+                    <div>TTL: <span className="text-blue-600">300</span></div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
+                <p className="text-xs text-blue-800">
+                  {lastAddedDomain.instructions}
+                </p>
+              </div>
+              <button
+                onClick={() => setLastAddedDomain(null)}
+                className="mt-3 text-xs text-gray-600 hover:text-gray-800 underline"
+              >
+                Hide Instructions
+              </button>
             </div>
           )}
         </div>

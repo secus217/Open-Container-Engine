@@ -247,6 +247,8 @@ pub struct DomainResponse {
     pub status: String,
     pub created_at: DateTime<Utc>,
     pub dns_records: Vec<DnsRecord>,
+    pub node_ip: String,
+    pub instructions: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
